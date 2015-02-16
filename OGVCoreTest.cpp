@@ -6,7 +6,14 @@
 // Please reuse and redistribute with the LICENSE notes intact.
 //
 
+#include <stdio.h>
+
 #include "OGVCore.hpp"
 
+int main() {
+	auto decoder = new OGVCoreDecoder();
+	printf("Hello! %p\n", decoder);
+	delete decoder;
 
-
+	return 0;
+}

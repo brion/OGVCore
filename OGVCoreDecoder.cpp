@@ -6,7 +6,12 @@
 // Please reuse and redistribute with the LICENSE notes intact.
 //
 
-#include "OGVCore.hpp"
+// good ol' C library
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
 // Various Xiph headers!
 
@@ -25,19 +30,31 @@
 #include <skeleton/skeleton.h>
 
 
+// And our own headers.
+
+#include "OGVCore.hpp"
+
+
 class OGVCoreDecoderPrivate {
 public:
-	OGVCoreDecoderPrivate(OGVCorePlayerBackend *backend);
+	OGVCoreDecoderPrivate();
 	~OGVCoreDecoderPrivate();
 
-	void receiveInput(const char *buffer, int bufsize);
-	void process();
+	bool hasAudio();
+	bool hasVideo();
+	bool isAudioReady();
+	bool isFrameReady();
+	OGVCoreAudioLayout *getAudioLayout();
+	OGVCoreFrameLayout *getFrameLayout();
 
-	void decodeFrame();
+	void receiveInput(const char *buffer, int bufsize);
+	bool process();
+
+	bool decodeFrame();
 	OGVCoreFrameBuffer *dequeueFrame();
 	void discardFrame();
 
-	void decodeAudio();
+	bool decodeAudio();
 	OGVCoreAudioBuffer *dequeueAudio();
 	void discardAudio();
 
@@ -84,7 +101,6 @@ private:
 	int               audiobufReady = 0;
 	ogg_int64_t       audiobufGranulepos = -1; /* time position of last sample */
 	double            audiobufTime = -1;
-	double            audioSampleRate = 0;
 
 	/* Audio decode state */
 	int               vorbisHeaders = 0;
@@ -125,14 +141,22 @@ private:
 	} appState;
 
 	int needData = 1;
-	static int buffersReceived = 0;
+	int buffersReceived = 0;
+	
+	bool frameReady;
+	OGVCoreFrameLayout *frameLayout;
+	OGVCoreFrameBuffer *queuedFrame;
+
+	bool audioReady;
+	OGVCoreAudioLayout *audioLayout;
+	OGVCoreAudioBuffer *queuedAudio;
 };
 
 #pragma mark - public method pimpl bouncers
 
-OGVCoreDecoder::OGVCoreDecoder(OGVCorePlayerBackend *backend)
+OGVCoreDecoder::OGVCoreDecoder()
 {
-	impl = new OGVCoreDecoderPrivate(backend);
+	impl = new OGVCoreDecoderPrivate();
 }
 
 OGVCoreDecoder::~OGVCoreDecoder()
@@ -141,14 +165,44 @@ OGVCoreDecoder::~OGVCoreDecoder()
 	impl = NULL;
 }
 
+bool OGVCoreDecoder::hasAudio()
+{
+	return impl->hasAudio();
+}
+
+bool OGVCoreDecoder::hasVideo()
+{
+	return impl->hasVideo();
+}
+
+bool OGVCoreDecoder::isAudioReady()
+{
+	return impl->isAudioReady();
+}
+
+bool OGVCoreDecoder::isFrameReady()
+{
+	return impl->isFrameReady();
+}
+
+OGVCoreAudioLayout *OGVCoreDecoder::getAudioLayout()
+{
+	return impl->getAudioLayout();
+}
+
+OGVCoreFrameLayout *OGVCoreDecoder::getFrameLayout()
+{
+	return impl->getFrameLayout();
+}
+
 void OGVCoreDecoder::receiveInput(const char *buffer, int bufsize)
 {
 	impl->receiveInput(buffer, bufsize);
 }
 
-void OGVCoreDecoder::process()
+bool OGVCoreDecoder::process()
 {
-	impl->process();
+	return impl->process();
 }
 
 bool OGVCoreDecoder::decodeFrame()
@@ -204,14 +258,12 @@ long OGVCoreDecoder::getKeypointOffset(long time_ms)
 
 #pragma mark - public method private implementations
 
-OGVCoreDecoderPrivate::OGVCoreDecoderPrivate(OGVCorePlayerBackend *aBackend)
+OGVCoreDecoderPrivate::OGVCoreDecoderPrivate()
 {
-	backend = aBackend;
-
     processAudio = 1;
     processVideo = 1;
 
-    appState = STATE_BEGIN;
+    appState = OGVCORE_STATE_BEGIN;
 
     /* start up Ogg stream synchronization layer */
     ogg_sync_init(&oggSyncState);
@@ -258,6 +310,37 @@ OGVCoreDecoderPrivate::~OGVCoreDecoderPrivate()
     ogg_sync_clear(&oggSyncState);
 }
 
+
+bool OGVCoreDecoderPrivate::hasAudio()
+{
+	return (audioLayout != NULL);
+}
+
+bool OGVCoreDecoderPrivate::hasVideo()
+{
+	return (frameLayout != NULL);
+}
+
+bool OGVCoreDecoderPrivate::isAudioReady()
+{
+	return audioReady;
+}
+
+bool OGVCoreDecoderPrivate::isFrameReady()
+{
+	return frameReady;
+}
+
+OGVCoreAudioLayout *OGVCoreDecoderPrivate::getAudioLayout()
+{
+	return audioLayout;
+}
+
+OGVCoreFrameLayout *OGVCoreDecoderPrivate::getFrameLayout()
+{
+	return frameLayout;
+}
+
 void OGVCoreDecoderPrivate::video_write(void) {
     th_ycbcr_buffer ycbcr;
     th_decode_ycbcr_out(theoraDecoderContext, ycbcr);
@@ -265,12 +348,17 @@ void OGVCoreDecoderPrivate::video_write(void) {
     int hdec = !(theoraInfo.pixel_fmt & 1);
     int vdec = !(theoraInfo.pixel_fmt & 2);
 
-    OgvJsOutputFrame(ycbcr[0].data, ycbcr[0].stride,
-            ycbcr[1].data, ycbcr[1].stride,
-            ycbcr[2].data, ycbcr[2].stride,
-            theoraInfo.frame_width, theoraInfo.frame_height,
-            hdec, vdec,
-            videobufTime, keyframeTime);
+	assert(queuedFrame == NULL);
+	queuedFrame = new OGVCoreFrameBuffer;
+	queuedFrame->layout = frameLayout;
+	queuedFrame->timestamp = videobufTime;
+	queuedFrame->keyframeTimestamp = keyframeTime;
+	queuedFrame->bytesY = ycbcr[0].data;
+	queuedFrame->strideY = ycbcr[0].stride;
+	queuedFrame->bytesCb = ycbcr[1].data;
+	queuedFrame->strideCb = ycbcr[1].stride;
+	queuedFrame->bytesCr = ycbcr[2].data;
+	queuedFrame->strideCr = ycbcr[2].stride;
 }
 
 /* helper: push a page into the appropriate steam */
@@ -292,7 +380,7 @@ void OGVCoreDecoderPrivate::receiveInput(const char *buffer, int bufsize)
 {
     if (bufsize > 0) {
 		buffersReceived = 1;
-		if (appState == STATE_DECODING) {
+		if (appState == OGVCORE_STATE_DECODING) {
 			// queue ALL the pages!
 			while (ogg_sync_pageout(&oggSyncState, &oggPage) > 0) {
 				queue_page(&oggPage);
@@ -306,7 +394,7 @@ void OGVCoreDecoderPrivate::receiveInput(const char *buffer, int bufsize)
     }
 }
 
-void OGVCoreDecoderPrivate::process()
+bool OGVCoreDecoderPrivate::process()
 {
 	if (!buffersReceived) {
 		return 0;
@@ -325,11 +413,11 @@ void OGVCoreDecoderPrivate::process()
 			return 0;
 		}
 	}
-    if (appState == STATE_BEGIN) {
+    if (appState == OGVCORE_STATE_BEGIN) {
         processBegin();
-    } else if (appState == STATE_HEADERS) {
+    } else if (appState == OGVCORE_STATE_HEADERS) {
         processHeaders();
-    } else if (appState == STATE_DECODING) {
+    } else if (appState == OGVCORE_STATE_DECODING) {
         processDecoding();
     } else {
     	// uhhh...
@@ -403,7 +491,7 @@ void OGVCoreDecoderPrivate::processBegin() {
     } else {
         printf("Moving on to header decoding...\n");
         // Not a bitstream start -- move on to header decoding...
-        appState = STATE_HEADERS;
+        appState = OGVCORE_STATE_HEADERS;
         //processHeaders();
     }
 }
@@ -520,22 +608,19 @@ void OGVCoreDecoderPrivate::processHeaders()
         printf("theoraHeaders is %d; vorbisHeaders is %d\n", theoraHeaders, vorbisHeaders);
 #endif
         if (theoraHeaders) {
-            printf("SETTING UP THEORA DECODER CONTEXT\n");
             theoraDecoderContext = th_decode_alloc(&theoraInfo, theoraSetupInfo);
-            printf("Ogg logical stream %lx is Theora %dx%d %.02f fps video\n"
-                    "Encoded frame content is %dx%d with %dx%d offset\n",
-                    theoraStreamState.serialno, theoraInfo.frame_width, theoraInfo.frame_height,
-                    (double) theoraInfo.fps_numerator / theoraInfo.fps_denominator,
-                    theoraInfo.pic_width, theoraInfo.pic_height, theoraInfo.pic_x, theoraInfo.pic_y);
-
-            int hdec = !(theoraInfo.pixel_fmt & 1);
-            int vdec = !(theoraInfo.pixel_fmt & 2);
-            OgvJsInitVideo(theoraInfo.frame_width, theoraInfo.frame_height,
-                    hdec, vdec,
-                    (float) theoraInfo.fps_numerator / theoraInfo.fps_denominator,
-                    theoraInfo.pic_width, theoraInfo.pic_height,
-                    theoraInfo.pic_x, theoraInfo.pic_y,
-                    theoraInfo.aspect_numerator, theoraInfo.aspect_denominator);
+            
+            frameLayout = new OGVCoreFrameLayout;
+            frameLayout->frameWidth = theoraInfo.frame_width;
+            frameLayout->frameHeight = theoraInfo.frame_height;
+            frameLayout->pictureWidth = theoraInfo.pic_width;
+            frameLayout->pictureHeight = theoraInfo.pic_height;
+            frameLayout->pictureOffsetX = theoraInfo.pic_x;
+            frameLayout->pictureOffsetY = theoraInfo.pic_y;
+            frameLayout->horizontalDecimation = !(theoraInfo.pixel_fmt & 1);
+            frameLayout->verticalDecimation = !(theoraInfo.pixel_fmt & 2);
+            frameLayout->aspectRatio = (double) theoraInfo.aspect_numerator / theoraInfo.aspect_denominator;
+            frameLayout->fps = (double) theoraInfo.fps_numerator / theoraInfo.fps_denominator;
         }
 
 #ifdef OPUS
@@ -543,8 +628,9 @@ void OGVCoreDecoderPrivate::processHeaders()
         if (opusHeaders) {
             // opusDecoder should already be initialized
             // Opus has a fixed internal sampling rate of 48000 Hz
-            audioSampleRate = 48000;
-            OgvJsInitAudio(opusChannels, audioSampleRate);
+            audioLayout = new OGVCoreAudioLayout;
+            audioLayout->channelCount = opusChannels;
+            audioLayout->sampleRate = 48000;
         } else
 #endif
         if (vorbisHeaders) {
@@ -553,13 +639,14 @@ void OGVCoreDecoderPrivate::processHeaders()
             printf("Ogg logical stream %lx is Vorbis %d channel %ld Hz audio.\n",
                     vorbisStreamState.serialno, vorbisInfo.channels, vorbisInfo.rate);
 
-			audioSampleRate = vorbisInfo.rate;
-            OgvJsInitAudio(vorbisInfo.channels, audioSampleRate);
+            audioLayout = new OGVCoreAudioLayout;
+            audioLayout->channelCount = vorbisInfo.channels;
+            audioLayout->sampleRate = vorbisInfo.rate;
         }
 
-        appState = STATE_DECODING;
+        appState = OGVCORE_STATE_DECODING;
         printf("Done with headers step\n");
-        OgvJsLoadedMetadata();
+        //OgvJsLoadedMetadata();
     }
 }
 
@@ -599,7 +686,8 @@ void OGVCoreDecoderPrivate::processDecoding()
 	        }
 			//printf("packet granulepos: %llx; time %lf; offset %d\n",(unsigned long long)videoPacket.granulepos, (double)videoPacketTime, (int)theoraInfo.keyframe_granule_shift);
 
-            OgvJsOutputFrameReady(videobufTime, keyframeTime);
+            //OgvJsOutputFrameReady(videobufTime, keyframeTime);
+            frameReady = 1;
         } else {
             needData = 1;
         }
@@ -614,9 +702,10 @@ void OGVCoreDecoderPrivate::processDecoding()
                 	// we can't update the granulepos yet
                 } else {
 	                audiobufGranulepos = audioPacket.granulepos;
-    	            audiobufTime = (double)audiobufGranulepos / audioSampleRate;
+    	            audiobufTime = (double)audiobufGranulepos / audioLayout->sampleRate;
     	        }
-                OgvJsOutputAudioReady(audiobufTime);
+                //OgvJsOutputAudioReady(audiobufTime);
+                audioReady = 1;
             } else {
                 needData = 1;
             }
@@ -631,7 +720,8 @@ void OGVCoreDecoderPrivate::processDecoding()
 	                audiobufGranulepos = audioPacket.granulepos;
     	            audiobufTime = vorbis_granule_time(&vorbisDspState, audiobufGranulepos);
         	    }
-				OgvJsOutputAudioReady(audiobufTime);
+				//OgvJsOutputAudioReady(audiobufTime);
+				audioReady = 1;
             } else {
                 needData = 1;
             }
@@ -676,6 +766,10 @@ bool OGVCoreDecoderPrivate::decodeFrame()
 
 OGVCoreFrameBuffer *OGVCoreDecoderPrivate::dequeueFrame()
 {
+	assert(queuedFrame);
+	OGVCoreFrameBuffer *frame = queuedFrame;
+	queuedFrame = NULL;
+	return frame;
 }
 
 void OGVCoreDecoderPrivate::discardFrame()
@@ -732,9 +826,12 @@ bool OGVCoreDecoderPrivate::decodeAudio()
                     if (audiobufGranulepos != -1) {
 						// keep track of how much time we've decodec
 	                    audiobufGranulepos += (sampleCount - skip);
-	                    audiobufTime = (double)audiobufGranulepos / audioSampleRate;
+	                    audiobufTime = (double)audiobufGranulepos / audioLayout->sampleRate;
 	                }
                     OgvJsOutputAudio(pcmp, opusChannels, sampleCount - skip);
+					assert(queuedAudio == NULL);
+					queuedAudio = new OGVCoreAudioBuffer(audioLayout, sampleCount, pcmp);
+
                     free(pcmp);
                     free(pcm);
                 }
@@ -758,7 +855,10 @@ bool OGVCoreDecoderPrivate::decodeAudio()
 					audiobufGranulepos += sampleCount;
 					audiobufTime = vorbis_granule_time(&vorbisDspState, audiobufGranulepos);
 				}
-                OgvJsOutputAudio(pcm, vorbisInfo.channels, sampleCount);
+                //OgvJsOutputAudio(pcm, vorbisInfo.channels, sampleCount);
+                
+                assert(queuedAudio == NULL);
+                queuedAudio = new OGVCoreAudioBuffer(audioLayout, sampleCount, (const float **)pcm);
 
                 vorbis_synthesis_read(&vorbisDspState, sampleCount);
             } else {
@@ -772,6 +872,10 @@ bool OGVCoreDecoderPrivate::decodeAudio()
 
 OGVCoreAudioBuffer *OGVCoreDecoderPrivate::dequeueAudio()
 {
+	assert(queuedAudio);
+	OGVCoreAudioBuffer *audio = queuedAudio;
+	queuedAudio = NULL;
+	return audio;
 }
 
 void OGVCoreDecoderPrivate::discardAudio()
@@ -831,7 +935,7 @@ void OGVCoreDecoderPrivate::flushBuffers()
 	needData = 1;
 }
 
-long OGVCoreDecoder::getSegmentLength()
+long OGVCoreDecoderPrivate::getSegmentLength()
 {
     ogg_int64_t segment_len = -1;
     if (skeletonHeaders) {
@@ -840,7 +944,7 @@ long OGVCoreDecoder::getSegmentLength()
     return (long)segment_len;
 }
 
-double OGVCoreDecoder::getDuration()
+double OGVCoreDecoderPrivate::getDuration()
 {
     if (skeletonHeaders) {
         ogg_uint16_t ver_maj = -1, ver_min = -1;
@@ -897,7 +1001,7 @@ double OGVCoreDecoder::getDuration()
     return -1;
 }
 
-long OGVCoreDecoder::getKeypointOffset(long time_ms)
+long OGVCoreDecoderPrivate::getKeypointOffset(long time_ms)
 {
     ogg_int64_t offset = -1;
     if (skeletonHeaders) {

@@ -11,7 +11,7 @@
 #include "OGVCore.hpp"
 
 int main() {
-	auto decoder = new OGVCoreDecoder();
+	auto decoder = new OGVCore::Decoder();
 	printf("Hello! %p\n", decoder);
 	delete decoder;
 

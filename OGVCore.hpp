@@ -9,156 +9,159 @@
 #include <string.h>
 #include <memory>
 
-struct OGVCoreFrameLayout {
-	int frameWidth;
-	int frameHeight;
-	int pictureWidth;
-	int pictureHeight;
-	int pictureOffsetX;
-	int pictureOffsetY;
-	int horizontalDecimation;
-	int verticalDecimation;
-	double aspectRatio;
-	double fps;
-};
+namespace OGVCore {
 
-struct OGVCoreFrameBuffer {
-	OGVCoreFrameLayout *layout;
-	double timestamp;
-	double keyframeTimestamp;
+	struct FrameLayout {
+		int frameWidth;
+		int frameHeight;
+		int pictureWidth;
+		int pictureHeight;
+		int pictureOffsetX;
+		int pictureOffsetY;
+		int horizontalDecimation;
+		int verticalDecimation;
+		double aspectRatio;
+		double fps;
+	};
 
-	const unsigned char *bytesY;
-	const unsigned char *bytesCb;
-	const unsigned char *bytesCr;
+	struct FrameBuffer {
+		FrameLayout *layout;
+		double timestamp;
+		double keyframeTimestamp;
+
+		const unsigned char *bytesY;
+		const unsigned char *bytesCb;
+		const unsigned char *bytesCr;
 	
-	int strideY;
-	int strideCb;
-	int strideCr;
-};
+		int strideY;
+		int strideCb;
+		int strideCr;
+	};
 
 
-struct OGVCoreAudioLayout {
-	int channelCount;
-	int sampleRate;
-};
+	struct AudioLayout {
+		int channelCount;
+		int sampleRate;
+	};
 
-struct OGVCoreAudioBuffer {
-	OGVCoreAudioLayout *layout;
-	int sampleCount;
-	const float **samples;
+	struct AudioBuffer {
+		AudioLayout *layout;
+		int sampleCount;
+		const float **samples;
 	
-	OGVCoreAudioBuffer(OGVCoreAudioLayout *aLayout, int aSampleCount, const float **aSamples)
-	{
-		layout = aLayout;
-		int n = layout->channelCount;
-		sampleCount = aSampleCount;
-		samples = new const float *[n];
-		for (int i = 0; i < n; i++) {
-			samples[i] = (const float *)new float[sampleCount];
-			memcpy((void *)aSamples[i], (void *)samples[i], sampleCount * sizeof(float));
+		AudioBuffer(AudioLayout *aLayout, int aSampleCount, const float **aSamples)
+		{
+			layout = aLayout;
+			int n = layout->channelCount;
+			sampleCount = aSampleCount;
+			samples = new const float *[n];
+			for (int i = 0; i < n; i++) {
+				samples[i] = (const float *)new float[sampleCount];
+				memcpy((void *)aSamples[i], (void *)samples[i], sampleCount * sizeof(float));
+			}
 		}
-	}
-};
+	};
 
 
-///
-/// Platform-independent class for wrapping the decoder
-///
-class OGVCoreDecoder {
-public:
-	OGVCoreDecoder();
-	~OGVCoreDecoder();
+	///
+	/// Platform-independent class for wrapping the decoder
+	///
+	class Decoder {
+	public:
+		Decoder();
+		~Decoder();
 	
-	bool hasAudio();
-	bool hasVideo();
-	bool isAudioReady();
-	bool isFrameReady();
-	OGVCoreAudioLayout *getAudioLayout();
-	OGVCoreFrameLayout *getFrameLayout();
+		bool hasAudio();
+		bool hasVideo();
+		bool isAudioReady();
+		bool isFrameReady();
+		AudioLayout *getAudioLayout();
+		FrameLayout *getFrameLayout();
 
-	void receiveInput(const char *buffer, int bufsize);
-	bool process();
+		void receiveInput(const char *buffer, int bufsize);
+		bool process();
 
-	bool decodeFrame();
-	OGVCoreFrameBuffer *dequeueFrame();
-	void discardFrame();
+		bool decodeFrame();
+		FrameBuffer *dequeueFrame();
+		void discardFrame();
 
-	bool decodeAudio();
-	OGVCoreAudioBuffer *dequeueAudio();
-	void discardAudio();
+		bool decodeAudio();
+		AudioBuffer *dequeueAudio();
+		void discardAudio();
 
-	void flushBuffers();	
+		void flushBuffers();	
 
-	/**
-	 * @return segment length in bytes
-	 */
-	long getSegmentLength();
-	/**
-	 * @return segment duration in seconds, or -1 if unknown
-	 */
-	double getDuration();
-	long getKeypointOffset(long time_ms);
+		/**
+		 * @return segment length in bytes
+		 */
+		long getSegmentLength();
+		/**
+		 * @return segment duration in seconds, or -1 if unknown
+		 */
+		double getDuration();
+		long getKeypointOffset(long time_ms);
 
-private:
-	class impl; std::unique_ptr<impl> pimpl;
-};
+	private:
+		class impl; std::unique_ptr<impl> pimpl;
+	};
 
 
-///
-/// Abstract class for JS, Cocoa, etc backends to implement
-/// platform-specific behavior...
-///
-class OGVCorePlayerBackend {
-public:
+	///
+	/// Abstract class for JS, Cocoa, etc backends to implement
+	/// platform-specific behavior...
+	///
+	class PlayerBackend {
+	public:
 
-	virtual double getTimestamp() = 0;
-	virtual void setTimeout(double aDelay) = 0;
+		virtual double getTimestamp() = 0;
+		virtual void setTimeout(double aDelay) = 0;
 	
-	virtual void drawFrame(OGVCoreFrameBuffer *aFrame) = 0;
+		virtual void drawFrame(FrameBuffer *aFrame) = 0;
 	
-	virtual void startAudio(OGVCoreAudioLayout *aLayout) = 0;
-	virtual void bufferAudio(OGVCoreAudioBuffer *aBuffer) = 0;
-	virtual void playAudio() = 0;
-	virtual void endAudio() = 0;
+		virtual void startAudio(AudioLayout *aLayout) = 0;
+		virtual void bufferAudio(AudioBuffer *aBuffer) = 0;
+		virtual void playAudio() = 0;
+		virtual void endAudio() = 0;
 	
-	virtual void setDownloadURL(const char *aUrl) = 0;
-	virtual void startDownload() = 0;
-	virtual void seekDownload(long long aPos) = 0;
-	virtual void continueDownload() = 0;
-	virtual void endDownload() = 0;
-};
+		virtual void setDownloadURL(const char *aUrl) = 0;
+		virtual void startDownload() = 0;
+		virtual void seekDownload(long long aPos) = 0;
+		virtual void continueDownload() = 0;
+		virtual void endDownload() = 0;
+	};
 
-///
-/// Platform-independent parts of the frontend player widget.
-/// Pair with a backend class to implement the drawing, audio,
-/// timing, and network code.
-///
-class OGVCorePlayer {
-public:
+	///
+	/// Platform-independent parts of the frontend player widget.
+	/// Pair with a backend class to implement the drawing, audio,
+	/// timing, and network code.
+	///
+	class Player {
+	public:
 
-	OGVCorePlayer(OGVCorePlayerBackend *backend);
-	~OGVCorePlayer();
+		Player(PlayerBackend *backend);
+		~Player();
 
-	void load();
-	void process();
+		void load();
+		void process();
 	
-	double getDuration();
-	double getVideoWidth();
-	double getVideoHeight();
+		double getDuration();
+		double getVideoWidth();
+		double getVideoHeight();
 	
-	const char *getSourceURL();
-	void setSourceURL(const char *aUrl);
+		const char *getSourceURL();
+		void setSourceURL(const char *aUrl);
 	
-	double getCurrentTime();
-	void setCurrentTime(double aTime);
+		double getCurrentTime();
+		void setCurrentTime(double aTime);
 	
-	bool getPaused();
-	void setPaused(bool aPaused);
+		bool getPaused();
+		void setPaused(bool aPaused);
 	
-	bool getPlaying();
-	bool getSeeking();
+		bool getPlaying();
+		bool getSeeking();
 
-private:
-	class impl; std::unique_ptr<impl> pimpl;
-};
+	private:
+		class impl; std::unique_ptr<impl> pimpl;
+	};
 
+}

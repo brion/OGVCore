@@ -18,278 +18,281 @@
 
 #include "OGVCore.hpp"
 
+namespace OGVCore {
+
 #pragma mark - Declarations
 
-class OGVCorePlayer::impl {
-public:
+    class Player::impl {
+    public:
 
-    impl(OGVCorePlayerBackend *backend);
-    ~impl();
+        impl(PlayerBackend *backend);
+        ~impl();
 
-    void load();
-    void process();
+        void load();
+        void process();
 
-    double getDuration();
-    double getVideoWidth();
-    double getVideoHeight();
+        double getDuration();
+        double getVideoWidth();
+        double getVideoHeight();
 
-    const char *getSourceURL();
-    void setSourceURL(const char *aUrl);
+        const char *getSourceURL();
+        void setSourceURL(const char *aUrl);
 
-    double getCurrentTime();
-    void setCurrentTime(double aTime);
+        double getCurrentTime();
+        void setCurrentTime(double aTime);
 
-    bool getPaused();
-    void setPaused(bool aPaused);
+        bool getPaused();
+        void setPaused(bool aPaused);
 
-    bool getPlaying();
-    bool getSeeking();
+        bool getPlaying();
+        bool getSeeking();
 
-private:
-    std::unique_ptr<OGVCorePlayerBackend> backend;
-    
-    enum {
-        STATE_INITIAL,
-        STATE_SEEKING_END,
-        STATE_LOADED,
-        STATE_PLAYING,
-        STATE_PAUSED,
-        STATE_SEEKING,
-        STATE_ENDED
-    } state = STATE_INITIAL;
-    
-    enum {
-        SEEKSTATE_NOT_SEEKING,
-        SEEKSTATE_BISECT_TO_TARGET,
-        SEEKSTATE_BISECT_TO_KEYPOINT,
-        SEEKSTATE_LINEAR_TO_TARGET
-    } seekState = SEEKSTATE_NOT_SEEKING;
-    
-    std::unique_ptr<OGVCoreDecoder> codec;
-    
-    double lastFrameTimestamp = 0.0;
-	double frameEndTimestamp = 0.0;
-	OGVCoreFrameBuffer *yCbCrBuffer = NULL;
+    private:
+        std::unique_ptr<PlayerBackend> backend;
 
-    void processFrame();
-    void drawFrame();
-    void doFrameComplete();
-    
-    double seekTargetTime = 0.0;
-    double seekTargetKeypoint = 0.0;
-    double bisectTargetTime = 0.0;
-    long lastSeekPosition = 0.0;
-    bool lastFrameSkipped;
-    //Bisector bisector;
+        enum {
+            STATE_INITIAL,
+            STATE_SEEKING_END,
+            STATE_LOADED,
+            STATE_PLAYING,
+            STATE_PAUSED,
+            STATE_SEEKING,
+            STATE_ENDED
+        } state = STATE_INITIAL;
 
-    void startBisection(double targetTime);
-    void seek(double toTime);
-    void continueSeekedPlayback();
-    void doProcessLinearSeeking();
-    void doProcessBisectionSeek();
+        enum {
+            SEEKSTATE_NOT_SEEKING,
+            SEEKSTATE_BISECT_TO_TARGET,
+            SEEKSTATE_BISECT_TO_KEYPOINT,
+            SEEKSTATE_LINEAR_TO_TARGET
+        } seekState = SEEKSTATE_NOT_SEEKING;
 
-    void doProcessing();
-    void pingProcessing(double delay);
-    void startProcessingVideo();
-};
+        std::unique_ptr<Decoder> codec;
 
-#pragma mark - OGVCorePlayer pimpl bounce methods
+        double lastFrameTimestamp = 0.0;
+        double frameEndTimestamp = 0.0;
+        FrameBuffer *yCbCrBuffer = NULL;
 
-OGVCorePlayer::OGVCorePlayer(OGVCorePlayerBackend *aBackend): pimpl(new impl(aBackend))
-{
-}
+        void processFrame();
+        void drawFrame();
+        void doFrameComplete();
 
-OGVCorePlayer::~OGVCorePlayer()
-{
-}
+        double seekTargetTime = 0.0;
+        double seekTargetKeypoint = 0.0;
+        double bisectTargetTime = 0.0;
+        long lastSeekPosition = 0.0;
+        bool lastFrameSkipped;
+        //Bisector bisector;
 
-void OGVCorePlayer::load()
-{
-    pimpl->load();
-}
+        void startBisection(double targetTime);
+        void seek(double toTime);
+        void continueSeekedPlayback();
+        void doProcessLinearSeeking();
+        void doProcessBisectionSeek();
 
-void OGVCorePlayer::process()
-{
-    pimpl->process();
-}
+        void doProcessing();
+        void pingProcessing(double delay);
+        void startProcessingVideo();
+    };
 
-double OGVCorePlayer::getDuration()
-{
-    return pimpl->getDuration();
-}
+#pragma mark - Player pimpl bounce methods
 
-double OGVCorePlayer::getVideoWidth()
-{
-    return pimpl->getVideoWidth();
-}
+    Player::Player(PlayerBackend *aBackend): pimpl(new impl(aBackend))
+    {
+    }
 
-double OGVCorePlayer::getVideoHeight()
-{
-    return pimpl->getVideoHeight();
-}
+    Player::~Player()
+    {
+    }
 
-const char *OGVCorePlayer::getSourceURL()
-{
-    return pimpl->getSourceURL();
-}
+    void Player::load()
+    {
+        pimpl->load();
+    }
 
-void OGVCorePlayer::setSourceURL(const char *aUrl)
-{
-    pimpl->setSourceURL(aUrl);
-}
+    void Player::process()
+    {
+        pimpl->process();
+    }
 
-double OGVCorePlayer::getCurrentTime()
-{
-    return pimpl->getCurrentTime();
-}
+    double Player::getDuration()
+    {
+        return pimpl->getDuration();
+    }
 
-void OGVCorePlayer::setCurrentTime(double aTime)
-{
-    pimpl->setCurrentTime(aTime);
-}
+    double Player::getVideoWidth()
+    {
+        return pimpl->getVideoWidth();
+    }
 
-bool OGVCorePlayer::getPaused()
-{
-    return pimpl->getPaused();
-}
+    double Player::getVideoHeight()
+    {
+        return pimpl->getVideoHeight();
+    }
 
-void OGVCorePlayer::setPaused(bool aPaused)
-{
-    return pimpl->setPaused(aPaused);
-}
+    const char *Player::getSourceURL()
+    {
+        return pimpl->getSourceURL();
+    }
 
-bool OGVCorePlayer::getPlaying()
-{
-    return pimpl->getPlaying();
-}
+    void Player::setSourceURL(const char *aUrl)
+    {
+        pimpl->setSourceURL(aUrl);
+    }
 
-bool OGVCorePlayer::getSeeking()
-{
-    return pimpl->getSeeking();
-}
+    double Player::getCurrentTime()
+    {
+        return pimpl->getCurrentTime();
+    }
+
+    void Player::setCurrentTime(double aTime)
+    {
+        pimpl->setCurrentTime(aTime);
+    }
+
+    bool Player::getPaused()
+    {
+        return pimpl->getPaused();
+    }
+
+    void Player::setPaused(bool aPaused)
+    {
+        return pimpl->setPaused(aPaused);
+    }
+
+    bool Player::getPlaying()
+    {
+        return pimpl->getPlaying();
+    }
+
+    bool Player::getSeeking()
+    {
+        return pimpl->getSeeking();
+    }
 
 #pragma mark - impl methods
 
-OGVCorePlayer::impl::impl(OGVCorePlayerBackend *aBackend): backend(aBackend)
-{
+    Player::impl::impl(PlayerBackend *aBackend): backend(aBackend)
+    {
+    }
+
+    Player::impl::~impl()
+    {
+    }
+
+    void Player::impl::load()
+    {
+        // TODO
+    }
+
+    void Player::impl::process()
+    {
+        // TODO
+    }
+
+    double Player::impl::getDuration()
+    {
+        return NAN; // TODO
+    }
+
+    double Player::impl::getVideoWidth()
+    {
+        return NAN; // TODO
+    }
+
+    double Player::impl::getVideoHeight()
+    {
+        return NAN; // TODO
+    }
+
+    const char *Player::impl::getSourceURL()
+    {
+        return NULL;
+    }
+
+    void Player::impl::setSourceURL(const char *aUrl)
+    {
+        // TODO
+    }
+
+    double Player::impl::getCurrentTime()
+    {
+        return NAN; // TODO
+    }
+
+    void Player::impl::setCurrentTime(double aTime)
+    {
+        // TODO
+    }
+
+    bool Player::impl::getPaused()
+    {
+        return false; // TODO
+    }
+
+    void Player::impl::setPaused(bool aPaused)
+    {
+        // TODO
+    }
+
+    bool Player::impl::getPlaying()
+    {
+        return false; // TODO
+    }
+
+    bool Player::impl::getSeeking()
+    {
+        return false; // TODO
+    }
+
+
+    void Player::impl::processFrame()
+    {
+        yCbCrBuffer = codec->dequeueFrame();
+        frameEndTimestamp = yCbCrBuffer->timestamp;
+    }
+
+    void Player::impl::drawFrame()
+    {
+        backend->drawFrame(yCbCrBuffer);
+        doFrameComplete();
+    }
+
+    void Player::impl::doFrameComplete()
+    {
+        lastFrameTimestamp = backend->getTimestamp();
+    }
+
+    void Player::impl::startBisection(double targetTime)
+    {
+    }
+
+    void Player::impl::seek(double toTime)
+    {
+    }
+
+    void Player::impl::continueSeekedPlayback()
+    {
+    }
+
+    void Player::impl::doProcessLinearSeeking()
+    {
+    }
+
+    void Player::impl::doProcessBisectionSeek()
+    {
+    }
+
+    void Player::impl::doProcessing()
+    {
+    }
+
+    void Player::impl::pingProcessing(double delay)
+    {
+    }
+
+    void Player::impl::startProcessingVideo()
+    {
+    }
+
 }
-
-OGVCorePlayer::impl::~impl()
-{
-}
-
-void OGVCorePlayer::impl::load()
-{
-    // TODO
-}
-
-void OGVCorePlayer::impl::process()
-{
-    // TODO
-}
-
-double OGVCorePlayer::impl::getDuration()
-{
-    return NAN; // TODO
-}
-
-double OGVCorePlayer::impl::getVideoWidth()
-{
-    return NAN; // TODO
-}
-
-double OGVCorePlayer::impl::getVideoHeight()
-{
-    return NAN; // TODO
-}
-
-const char *OGVCorePlayer::impl::getSourceURL()
-{
-    return NULL;
-}
-
-void OGVCorePlayer::impl::setSourceURL(const char *aUrl)
-{
-    // TODO
-}
-
-double OGVCorePlayer::impl::getCurrentTime()
-{
-    return NAN; // TODO
-}
-
-void OGVCorePlayer::impl::setCurrentTime(double aTime)
-{
-    // TODO
-}
-
-bool OGVCorePlayer::impl::getPaused()
-{
-    return false; // TODO
-}
-
-void OGVCorePlayer::impl::setPaused(bool aPaused)
-{
-    // TODO
-}
-
-bool OGVCorePlayer::impl::getPlaying()
-{
-    return false; // TODO
-}
-
-bool OGVCorePlayer::impl::getSeeking()
-{
-    return false; // TODO
-}
-
-
-void OGVCorePlayer::impl::processFrame()
-{
-    yCbCrBuffer = codec->dequeueFrame();
-    frameEndTimestamp = yCbCrBuffer->timestamp;
-}
-
-void OGVCorePlayer::impl::drawFrame()
-{
-    backend->drawFrame(yCbCrBuffer);
-    doFrameComplete();
-}
-
-void OGVCorePlayer::impl::doFrameComplete()
-{
-    lastFrameTimestamp = backend->getTimestamp();
-}
-
-void OGVCorePlayer::impl::startBisection(double targetTime)
-{
-}
-
-void OGVCorePlayer::impl::seek(double toTime)
-{
-}
-
-void OGVCorePlayer::impl::continueSeekedPlayback()
-{
-}
-
-void OGVCorePlayer::impl::doProcessLinearSeeking()
-{
-}
-
-void OGVCorePlayer::impl::doProcessBisectionSeek()
-{
-}
-
-void OGVCorePlayer::impl::doProcessing()
-{
-}
-
-void OGVCorePlayer::impl::pingProcessing(double delay)
-{
-}
-
-void OGVCorePlayer::impl::startProcessingVideo()
-{
-}
-

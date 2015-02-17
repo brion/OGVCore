@@ -89,7 +89,7 @@ namespace OGVCore {
 		AudioBuffer *dequeueAudio();
 		void discardAudio();
 
-		void flushBuffers();	
+		void flush();	
 
 		/**
 		 * @return segment length in bytes

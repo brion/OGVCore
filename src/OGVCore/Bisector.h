@@ -2,7 +2,7 @@
 
 namespace OGVCore {
 
-	typedef std::function<void(int,int,int)> BisectorFunc;
+	typedef std::function<bool(int,int,int)> BisectorFunc;
 
 	/**
 	 * Give as your 'process' function something that will trigger an async
@@ -25,10 +25,10 @@ namespace OGVCore {
 		int position_ = 0;
 		int n_ = 0;
 
-		void iterate() {
+		bool iterate() {
 			n_++;
 			position_ = (start_ + end_) / 2;
-			process_(start_, end_, position_);
+			return process_(start_, end_, position_);
 		}
 	
 	public:
@@ -39,18 +39,18 @@ namespace OGVCore {
 		{
 		}
 
-		void start() {
-			iterate();
+		bool start() {
+			return iterate();
 		}
 
-		void left() {
+		bool left() {
 			end_ = position_;
-			iterate();
+			return iterate();
 		}
 
-		void right() {
+		bool right() {
 			start_ = position_;
-			iterate();
+			return iterate();
 		}
 
 	};

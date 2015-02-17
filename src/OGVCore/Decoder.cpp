@@ -237,9 +237,11 @@ namespace OGVCore {
         pimpl->discardAudio();
     }
 
-    void Decoder::flushBuffers()
+    void Decoder::flush()
     {
         pimpl->flushBuffers();
+        pimpl->discardFrame();
+        pimpl->discardAudio();
     }
 
     long Decoder::getSegmentLength()

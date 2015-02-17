@@ -62,14 +62,9 @@ namespace OGVCore {
             STATE_ENDED
         } state = STATE_INITIAL;
 
-        enum {
-            SEEKSTATE_NOT_SEEKING,
-            SEEKSTATE_BISECT_TO_TARGET,
-            SEEKSTATE_BISECT_TO_KEYPOINT,
-            SEEKSTATE_LINEAR_TO_TARGET
-        } seekState = SEEKSTATE_NOT_SEEKING;
-
         std::unique_ptr<Decoder> codec;
+        
+        int bytesTotal;
 
         double lastFrameTimestamp = 0.0;
         double frameEndTimestamp = 0.0;
@@ -79,12 +74,20 @@ namespace OGVCore {
         void drawFrame();
         void doFrameComplete();
 
+        // Seeking
+        enum {
+            SEEKSTATE_NOT_SEEKING,
+            SEEKSTATE_BISECT_TO_TARGET,
+            SEEKSTATE_BISECT_TO_KEYPOINT,
+            SEEKSTATE_LINEAR_TO_TARGET
+        } seekState = SEEKSTATE_NOT_SEEKING;
+
         double seekTargetTime = 0.0;
         double seekTargetKeypoint = 0.0;
         double bisectTargetTime = 0.0;
         long lastSeekPosition = 0.0;
         bool lastFrameSkipped;
-        //Bisector bisector;
+        Bisector *seekBisector;
 
         void startBisection(double targetTime);
         void seek(double toTime);
@@ -92,6 +95,7 @@ namespace OGVCore {
         void doProcessLinearSeeking();
         void doProcessBisectionSeek();
 
+        // Main stuff!
         void doProcessing();
         void pingProcessing(double delay);
         void startProcessingVideo();
@@ -267,6 +271,24 @@ namespace OGVCore {
 
     void Player::impl::startBisection(double targetTime)
     {
+		bisectTargetTime = targetTime;
+		seekBisector = new Bisector(
+			/* start */ 0,
+			/* end */ bytesTotal - 1,
+			/* process */ [this] (int start, int end, int position) {
+				if (position == lastSeekPosition) {
+					return false;
+				} else {
+					lastSeekPosition = position;
+					lastFrameSkipped = false;
+					codec->flush();
+					backend->seekDownload(position);
+					backend->continueDownload();
+					return true;
+				}
+			}
+		);
+		seekBisector->start();
     }
 
     void Player::impl::seek(double toTime)

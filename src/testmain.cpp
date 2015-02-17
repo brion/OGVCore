@@ -7,8 +7,7 @@
 //
 
 #include <stdio.h>
-
-#include "OGVCore.hpp"
+#include <OGVCore.h>
 
 int main() {
 	auto decoder = new OGVCore::Decoder();

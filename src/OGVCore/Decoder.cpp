@@ -32,7 +32,7 @@
 
 // And our own headers.
 
-#include "OGVCore.hpp"
+#include <OGVCore.h>
 
 namespace OGVCore {
 

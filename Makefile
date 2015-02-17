@@ -12,14 +12,14 @@ clean :
 
 # ogvcoretest
 
-CFLAGS=-std=c++11 `pkg-config --cflags ogg vorbis theora` -Ilibskeleton/include
+CFLAGS=-std=c++11 `pkg-config --cflags ogg vorbis theora` -Ilibskeleton/include -Iinclude
 LDFLAGS=`pkg-config --libs ogg vorbis theora`
 
-SOURCES=OGVCoreTest.cpp \
-        OGVCoreDecoder.cpp \
-        OGVCorePlayer.cpp
+SOURCES=src/testmain.cpp \
+        src/OGVCore/Decoder.cpp \
+        src/OGVCore/Player.cpp
 
-HEADERS=OGVCore.hpp
+HEADERS=include/OGVCore.h
 
 ogvcoretest : $(SOURCES) $(HEADERS) libskeleton.so
 	c++ $(CFLAGS) $(SOURCES) libskeleton.so -o ogvcoretest $(LDFLAGS)

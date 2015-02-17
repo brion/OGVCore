@@ -16,7 +16,8 @@ CFLAGS=-std=c++11 `pkg-config --cflags ogg vorbis theora` -Ilibskeleton/include
 LDFLAGS=`pkg-config --libs ogg vorbis theora`
 
 SOURCES=OGVCoreTest.cpp \
-        OGVCoreDecoder.cpp
+        OGVCoreDecoder.cpp \
+        OGVCorePlayer.cpp
 
 HEADERS=OGVCore.hpp
 

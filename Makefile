@@ -19,9 +19,11 @@ SOURCES=src/testmain.cpp \
         src/OGVCore/Decoder.cpp \
         src/OGVCore/Player.cpp
 
-HEADERS=include/OGVCore.h
+PRIVATE_HEADERS=src/OGVCore/Bisector.h
 
-ogvcoretest : $(SOURCES) $(HEADERS) libskeleton.so
+PUBLIC_HEADERS=include/OGVCore.h
+
+ogvcoretest : $(SOURCES) $(PRIVATE_HEADERS) $(PUBLIC_HEADERS) libskeleton.so
 	c++ $(CFLAGS) $(SOURCES) libskeleton.so -o ogvcoretest $(LDFLAGS)
 
 

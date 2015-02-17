@@ -18,6 +18,8 @@
 
 #include <OGVCore.h>
 
+#include "Bisector.h"
+
 namespace OGVCore {
 
 #pragma mark - Declarations

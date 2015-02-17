@@ -34,35 +34,36 @@
 
 #include "OGVCore.hpp"
 
+#pragma mark - Declarations
 
-class OGVCoreDecoderPrivate {
+class OGVCoreDecoder::impl {
 public:
-	OGVCoreDecoderPrivate();
-	~OGVCoreDecoderPrivate();
+	impl();
+	~impl();
 
-	bool hasAudio();
-	bool hasVideo();
-	bool isAudioReady();
-	bool isFrameReady();
-	OGVCoreAudioLayout *getAudioLayout();
-	OGVCoreFrameLayout *getFrameLayout();
+	 bool hasAudio();
+	 bool hasVideo();
+	 bool isAudioReady();
+	 bool isFrameReady();
+	 OGVCoreAudioLayout *getAudioLayout();
+	 OGVCoreFrameLayout *getFrameLayout();
 
-	void receiveInput(const char *buffer, int bufsize);
-	bool process();
+	 void receiveInput(const char *buffer, int bufsize);
+	 bool process();
 
-	bool decodeFrame();
-	OGVCoreFrameBuffer *dequeueFrame();
-	void discardFrame();
+	 bool decodeFrame();
+	 OGVCoreFrameBuffer *dequeueFrame();
+	 void discardFrame();
 
-	bool decodeAudio();
-	OGVCoreAudioBuffer *dequeueAudio();
-	void discardAudio();
+	 bool decodeAudio();
+	 OGVCoreAudioBuffer *dequeueAudio();
+	 void discardAudio();
 
-	void flushBuffers();	
+	 void flushBuffers();    
 
-	long getSegmentLength();
-	double getDuration();
-	long getKeypointOffset(long time_ms);
+	 long getSegmentLength();
+	 double getDuration();
+	 long getKeypointOffset(long time_ms);
 
 private:
 	void video_write();
@@ -152,113 +153,111 @@ private:
 	OGVCoreAudioBuffer *queuedAudio;
 };
 
-#pragma mark - public method pimpl bouncers
+#pragma mark - OGVCoreDecoder methods
 
-OGVCoreDecoder::OGVCoreDecoder()
+OGVCoreDecoder::OGVCoreDecoder(): pimpl(new impl)
 {
-	impl = new OGVCoreDecoderPrivate();
 }
 
 OGVCoreDecoder::~OGVCoreDecoder()
 {
-	delete impl;
-	impl = NULL;
 }
+
+#pragma mark - public method pimpl bouncers
 
 bool OGVCoreDecoder::hasAudio()
 {
-	return impl->hasAudio();
+	return pimpl->hasAudio();
 }
 
 bool OGVCoreDecoder::hasVideo()
 {
-	return impl->hasVideo();
+	return pimpl->hasVideo();
 }
 
 bool OGVCoreDecoder::isAudioReady()
 {
-	return impl->isAudioReady();
+	return pimpl->isAudioReady();
 }
 
 bool OGVCoreDecoder::isFrameReady()
 {
-	return impl->isFrameReady();
+	return pimpl->isFrameReady();
 }
 
 OGVCoreAudioLayout *OGVCoreDecoder::getAudioLayout()
 {
-	return impl->getAudioLayout();
+	return pimpl->getAudioLayout();
 }
 
 OGVCoreFrameLayout *OGVCoreDecoder::getFrameLayout()
 {
-	return impl->getFrameLayout();
+	return pimpl->getFrameLayout();
 }
 
 void OGVCoreDecoder::receiveInput(const char *buffer, int bufsize)
 {
-	impl->receiveInput(buffer, bufsize);
+	pimpl->receiveInput(buffer, bufsize);
 }
 
 bool OGVCoreDecoder::process()
 {
-	return impl->process();
+	return pimpl->process();
 }
 
 bool OGVCoreDecoder::decodeFrame()
 {
-	return impl->decodeFrame();
+	return pimpl->decodeFrame();
 }
 
 OGVCoreFrameBuffer *OGVCoreDecoder::dequeueFrame()
 {
-	return impl->dequeueFrame();
+	return pimpl->dequeueFrame();
 }
 
 void OGVCoreDecoder::discardFrame()
 {
-	return impl->discardFrame();
+	return pimpl->discardFrame();
 }
 
 bool OGVCoreDecoder::decodeAudio()
 {
-	return impl->decodeAudio();
+	return pimpl->decodeAudio();
 }
 
 OGVCoreAudioBuffer *OGVCoreDecoder::dequeueAudio()
 {
-	return impl->dequeueAudio();
+	return pimpl->dequeueAudio();
 }
 
 void OGVCoreDecoder::discardAudio()
 {
-	impl->discardAudio();
+	pimpl->discardAudio();
 }
 
 void OGVCoreDecoder::flushBuffers()
 {
-	impl->flushBuffers();
+	pimpl->flushBuffers();
 }
 
 long OGVCoreDecoder::getSegmentLength()
 {
-	return impl->getSegmentLength();
+	return pimpl->getSegmentLength();
 }
 
 double OGVCoreDecoder::getDuration()
 {
-	return impl->getDuration();
+	return pimpl->getDuration();
 }
 
 long OGVCoreDecoder::getKeypointOffset(long time_ms)
 {
-	return impl->getKeypointOffset(time_ms);
+	return pimpl->getKeypointOffset(time_ms);
 }
 
+#pragma mark - implementation methods
 
-#pragma mark - public method private implementations
-
-OGVCoreDecoderPrivate::OGVCoreDecoderPrivate()
+OGVCoreDecoder::impl::impl()
 {
     processAudio = 1;
     processVideo = 1;
@@ -279,7 +278,7 @@ OGVCoreDecoderPrivate::OGVCoreDecoderPrivate()
     skeleton = oggskel_new();
 }
 
-OGVCoreDecoderPrivate::~OGVCoreDecoderPrivate()
+OGVCoreDecoder::impl::~impl()
 {
     if (theoraHeaders) {
         ogg_stream_clear(&theoraStreamState);
@@ -311,37 +310,37 @@ OGVCoreDecoderPrivate::~OGVCoreDecoderPrivate()
 }
 
 
-bool OGVCoreDecoderPrivate::hasAudio()
+bool OGVCoreDecoder::impl::hasAudio()
 {
 	return (audioLayout != NULL);
 }
 
-bool OGVCoreDecoderPrivate::hasVideo()
+bool OGVCoreDecoder::impl::hasVideo()
 {
 	return (frameLayout != NULL);
 }
 
-bool OGVCoreDecoderPrivate::isAudioReady()
+bool OGVCoreDecoder::impl::isAudioReady()
 {
 	return audioReady;
 }
 
-bool OGVCoreDecoderPrivate::isFrameReady()
+bool OGVCoreDecoder::impl::isFrameReady()
 {
 	return frameReady;
 }
 
-OGVCoreAudioLayout *OGVCoreDecoderPrivate::getAudioLayout()
+OGVCoreAudioLayout *OGVCoreDecoder::impl::getAudioLayout()
 {
 	return audioLayout;
 }
 
-OGVCoreFrameLayout *OGVCoreDecoderPrivate::getFrameLayout()
+OGVCoreFrameLayout *OGVCoreDecoder::impl::getFrameLayout()
 {
 	return frameLayout;
 }
 
-void OGVCoreDecoderPrivate::video_write(void) {
+void OGVCoreDecoder::impl::video_write(void) {
     th_ycbcr_buffer ycbcr;
     th_decode_ycbcr_out(theoraDecoderContext, ycbcr);
 
@@ -364,7 +363,7 @@ void OGVCoreDecoderPrivate::video_write(void) {
 /* helper: push a page into the appropriate steam */
 /* this can be done blindly; a stream won't accept a page
                 that doesn't belong to it */
-int OGVCoreDecoderPrivate::queue_page(ogg_page *page) {
+int OGVCoreDecoder::impl::queue_page(ogg_page *page) {
     if (theoraHeaders) ogg_stream_pagein(&theoraStreamState, page);
     if (vorbisHeaders) ogg_stream_pagein(&vorbisStreamState, page);
 #ifdef OPUS
@@ -376,7 +375,7 @@ int OGVCoreDecoderPrivate::queue_page(ogg_page *page) {
     return 0;
 }
 
-void OGVCoreDecoderPrivate::receiveInput(const char *buffer, int bufsize)
+void OGVCoreDecoder::impl::receiveInput(const char *buffer, int bufsize)
 {
     if (bufsize > 0) {
 		buffersReceived = 1;
@@ -394,7 +393,7 @@ void OGVCoreDecoderPrivate::receiveInput(const char *buffer, int bufsize)
     }
 }
 
-bool OGVCoreDecoderPrivate::process()
+bool OGVCoreDecoder::impl::process()
 {
 	if (!buffersReceived) {
 		return 0;
@@ -426,7 +425,7 @@ bool OGVCoreDecoderPrivate::process()
 	return 1;
 }
 
-void OGVCoreDecoderPrivate::processBegin() {
+void OGVCoreDecoder::impl::processBegin() {
     if (ogg_page_bos(&oggPage)) {
         printf("Packet is at start of a bitstream\n");
         int got_packet;
@@ -496,7 +495,7 @@ void OGVCoreDecoderPrivate::processBegin() {
     }
 }
 
-void OGVCoreDecoderPrivate::processHeaders()
+void OGVCoreDecoder::impl::processHeaders()
 {
 
     if ((theoraHeaders && theoraProcessingHeaders)
@@ -650,7 +649,7 @@ void OGVCoreDecoderPrivate::processHeaders()
     }
 }
 
-void OGVCoreDecoderPrivate::processDecoding()
+void OGVCoreDecoder::impl::processDecoding()
 {
 	needData = 0;
     if (theoraHeaders && !videobufReady) {
@@ -729,7 +728,7 @@ void OGVCoreDecoderPrivate::processDecoding()
     }
 }
 
-bool OGVCoreDecoderPrivate::decodeFrame()
+bool OGVCoreDecoder::impl::decodeFrame()
 {
     if (ogg_stream_packetout(&theoraStreamState, &videoPacket) <= 0) {
         printf("Theora packet didn't come out of stream\n");
@@ -764,7 +763,7 @@ bool OGVCoreDecoderPrivate::decodeFrame()
     }
 }
 
-OGVCoreFrameBuffer *OGVCoreDecoderPrivate::dequeueFrame()
+OGVCoreFrameBuffer *OGVCoreDecoder::impl::dequeueFrame()
 {
 	assert(queuedFrame);
 	OGVCoreFrameBuffer *frame = queuedFrame;
@@ -772,7 +771,7 @@ OGVCoreFrameBuffer *OGVCoreDecoderPrivate::dequeueFrame()
 	return frame;
 }
 
-void OGVCoreDecoderPrivate::discardFrame()
+void OGVCoreDecoder::impl::discardFrame()
 {
 	if (videobufReady) {
 		if (theoraHeaders) {
@@ -782,7 +781,7 @@ void OGVCoreDecoderPrivate::discardFrame()
 	}
 }
 
-bool OGVCoreDecoderPrivate::decodeAudio()
+bool OGVCoreDecoder::impl::decodeAudio()
 {
     int packetRet = 0;
     audiobufReady = 0;
@@ -870,7 +869,7 @@ bool OGVCoreDecoderPrivate::decodeAudio()
     return foundSome;
 }
 
-OGVCoreAudioBuffer *OGVCoreDecoderPrivate::dequeueAudio()
+OGVCoreAudioBuffer *OGVCoreDecoder::impl::dequeueAudio()
 {
 	assert(queuedAudio);
 	OGVCoreAudioBuffer *audio = queuedAudio;
@@ -878,7 +877,7 @@ OGVCoreAudioBuffer *OGVCoreDecoderPrivate::dequeueAudio()
 	return audio;
 }
 
-void OGVCoreDecoderPrivate::discardAudio()
+void OGVCoreDecoder::impl::discardAudio()
 {
 	if (audiobufReady) {
 		if (vorbisHeaders) {
@@ -893,7 +892,7 @@ void OGVCoreDecoderPrivate::discardAudio()
 	}
 }
 
-void OGVCoreDecoderPrivate::flushBuffers()
+void OGVCoreDecoder::impl::flushBuffers()
 {
 	// First, read out anything left in our input buffer
 	while (ogg_sync_pageout(&oggSyncState, &oggPage) > 0) {
@@ -935,7 +934,7 @@ void OGVCoreDecoderPrivate::flushBuffers()
 	needData = 1;
 }
 
-long OGVCoreDecoderPrivate::getSegmentLength()
+long OGVCoreDecoder::impl::getSegmentLength()
 {
     ogg_int64_t segment_len = -1;
     if (skeletonHeaders) {
@@ -944,7 +943,7 @@ long OGVCoreDecoderPrivate::getSegmentLength()
     return (long)segment_len;
 }
 
-double OGVCoreDecoderPrivate::getDuration()
+double OGVCoreDecoder::impl::getDuration()
 {
     if (skeletonHeaders) {
         ogg_uint16_t ver_maj = -1, ver_min = -1;
@@ -1001,7 +1000,7 @@ double OGVCoreDecoderPrivate::getDuration()
     return -1;
 }
 
-long OGVCoreDecoderPrivate::getKeypointOffset(long time_ms)
+long OGVCoreDecoder::impl::getKeypointOffset(long time_ms)
 {
     ogg_int64_t offset = -1;
     if (skeletonHeaders) {

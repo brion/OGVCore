@@ -7,6 +7,7 @@
 //
 
 #include <string.h>
+#include <memory>
 
 struct OGVCoreFrameLayout {
 	int frameWidth;
@@ -60,9 +61,6 @@ struct OGVCoreAudioBuffer {
 };
 
 
-// forward decl
-class OGVCoreDecoderPrivate;
-
 ///
 /// Platform-independent class for wrapping the decoder
 ///
@@ -102,7 +100,7 @@ public:
 	long getKeypointOffset(long time_ms);
 
 private:
-	OGVCoreDecoderPrivate *impl;
+	class impl; std::unique_ptr<impl> pimpl;
 };
 
 
@@ -128,9 +126,6 @@ public:
 	virtual void continueDownload() = 0;
 	virtual void endDownload() = 0;
 };
-
-// forward decl
-class OGVCorePlayerPrivate;
 
 ///
 /// Platform-independent parts of the frontend player widget.
@@ -163,6 +158,6 @@ public:
 	bool getSeeking();
 
 private:
-	OGVCorePlayerPrivate *impl;
+	class impl; std::unique_ptr<impl> pimpl;
 };
 

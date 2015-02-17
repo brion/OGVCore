@@ -111,7 +111,8 @@ private:
 class OGVCorePlayerBackend {
 public:
 
-	virtual void scheduleTimeout(double aDelay) = 0;
+	virtual double getTimestamp() = 0;
+	virtual void setTimeout(double aDelay) = 0;
 	
 	virtual void drawFrame(OGVCoreFrameBuffer *aFrame) = 0;
 	

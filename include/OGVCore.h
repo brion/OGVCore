@@ -6,9 +6,9 @@
 // Please reuse and redistribute with the LICENSE notes intact.
 //
 
-#include <string.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace OGVCore {
 
@@ -79,7 +79,7 @@ namespace OGVCore {
 		AudioLayout *getAudioLayout();
 		FrameLayout *getFrameLayout();
 
-		void receiveInput(const char *buffer, int bufsize);
+		void receiveInput(std::vector<unsigned char> aBuffer);
 		bool process();
 
 		bool decodeFrame();

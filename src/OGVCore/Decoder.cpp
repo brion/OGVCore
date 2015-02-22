@@ -6,19 +6,18 @@
 // Please reuse and redistribute with the LICENSE notes intact.
 //
 
-// good ol' C library
+// C++ awesome
+#include <vector>
 
+// good ol' C library
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 // Various Xiph headers!
-
 #include <ogg/ogg.h>
-
 #include <vorbis/codec.h>
-
 #include <theora/theoradec.h>
 
 #ifdef OPUS
@@ -50,7 +49,7 @@ namespace OGVCore {
          AudioLayout *getAudioLayout();
          FrameLayout *getFrameLayout();
 
-         void receiveInput(const char *buffer, int bufsize);
+         void receiveInput(std::vector<unsigned char> aBuffer);
          bool process();
 
          bool decodeFrame();
@@ -197,9 +196,9 @@ namespace OGVCore {
         return pimpl->getFrameLayout();
     }
 
-    void Decoder::receiveInput(const char *buffer, int bufsize)
+    void Decoder::receiveInput(std::vector<unsigned char> aBuffer)
     {
-        pimpl->receiveInput(buffer, bufsize);
+        pimpl->receiveInput(aBuffer);
     }
 
     bool Decoder::process()
@@ -379,9 +378,11 @@ namespace OGVCore {
         return 0;
     }
 
-    void Decoder::impl::receiveInput(const char *buffer, int bufsize)
+    void Decoder::impl::receiveInput(std::vector<unsigned char> aBuffer)
     {
+        int bufsize = aBuffer.size();
         if (bufsize > 0) {
+            const unsigned char *buffer = aBuffer.data();
             buffersReceived = 1;
             if (appState == OGVCORE_STATE_DECODING) {
                 // queue ALL the pages!

@@ -47,18 +47,18 @@ namespace OGVCore {
 
 	struct AudioBuffer {
 		AudioLayout *layout;
-		int sampleCount;
-		const float **samples;
+		const int sampleCount;
+		std::vector<std::vector<float>> samples;
 	
-		AudioBuffer(AudioLayout *aLayout, int aSampleCount, const float **aSamples)
+		// Convenience constructor for the C library output
+		AudioBuffer(AudioLayout *aLayout, int aSampleCount, const float **aSamples) :
+			layout(aLayout),
+			sampleCount(aSampleCount),
+			samples(layout->channelCount)
 		{
-			layout = aLayout;
 			int n = layout->channelCount;
-			sampleCount = aSampleCount;
-			samples = new const float *[n];
 			for (int i = 0; i < n; i++) {
-				samples[i] = (const float *)new float[sampleCount];
-				memcpy((void *)aSamples[i], (void *)samples[i], sampleCount * sizeof(float));
+				samples.push_back(std::vector<float>(aSamples[n], aSamples[n] + aSampleCount));
 			}
 		}
 	};

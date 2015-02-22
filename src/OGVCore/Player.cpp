@@ -6,8 +6,10 @@
 // Please reuse and redistribute with the LICENSE notes intact.
 //
 
-// good ol' C library
+// C++11
+#include <string>
 
+// good ol' C library
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,9 +17,7 @@
 #include <math.h>
 
 // And our own headers.
-
 #include <OGVCore.h>
-
 #include "Bisector.h"
 
 namespace OGVCore {
@@ -37,8 +37,8 @@ namespace OGVCore {
         double getVideoWidth();
         double getVideoHeight();
 
-        const char *getSourceURL();
-        void setSourceURL(const char *aUrl);
+        std::string getSourceURL();
+        void setSourceURL(std::string aUrl);
 
         double getCurrentTime();
         void setCurrentTime(double aTime);
@@ -140,12 +140,12 @@ namespace OGVCore {
         return pimpl->getVideoHeight();
     }
 
-    const char *Player::getSourceURL()
+    std::string Player::getSourceURL()
     {
         return pimpl->getSourceURL();
     }
 
-    void Player::setSourceURL(const char *aUrl)
+    void Player::setSourceURL(std::string aUrl)
     {
         pimpl->setSourceURL(aUrl);
     }
@@ -182,7 +182,9 @@ namespace OGVCore {
 
 #pragma mark - impl methods
 
-    Player::impl::impl(Delegate *aDelegate): delegate(aDelegate)
+    Player::impl::impl(Delegate *aDelegate):
+        delegate(aDelegate),
+        timer(delegate->timer())
     {
     }
 
@@ -215,12 +217,12 @@ namespace OGVCore {
         return NAN; // TODO
     }
 
-    const char *Player::impl::getSourceURL()
+    std::string Player::impl::getSourceURL()
     {
         return NULL;
     }
 
-    void Player::impl::setSourceURL(const char *aUrl)
+    void Player::impl::setSourceURL(std::string aUrl)
     {
         // TODO
     }

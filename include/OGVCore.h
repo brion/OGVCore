@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <memory>
+#include <string>
 
 namespace OGVCore {
 
@@ -145,7 +146,7 @@ namespace OGVCore {
 		virtual void abort() = 0;
 		virtual void seek(long aBytePosition) = 0;
 
-		virtual const char *getResponseHeader(const char *aHeaderName) = 0;
+		virtual std::string getResponseHeader(std::string aHeaderName) = 0;
 		virtual long bytesTotal() = 0;
 		virtual long bytesBuffered() = 0;
 		virtual long bytesRead() = 0;
@@ -183,7 +184,7 @@ namespace OGVCore {
 			virtual Timer *timer() = 0;
 			virtual FrameSink *frameSink(FrameLayout *aLayout) = 0;
 			virtual AudioFeeder *audioFeeder(AudioLayout *aLayout, AudioFeeder::Delegate *aDelegate) = 0;
-			virtual StreamFile *streamFile(const char *aURL, StreamFile::Delegate *aDelegate) = 0;
+			virtual StreamFile *streamFile(std::string aURL, StreamFile::Delegate *aDelegate) = 0;
 		
 			virtual void onLoadedMetadata() = 0;
 			virtual void onPlay() = 0;
@@ -202,8 +203,8 @@ namespace OGVCore {
 		double getVideoWidth();
 		double getVideoHeight();
 	
-		const char *getSourceURL();
-		void setSourceURL(const char *aUrl);
+		std::string getSourceURL();
+		void setSourceURL(std::string aUrl);
 	
 		double getCurrentTime();
 		void setCurrentTime(double aTime);

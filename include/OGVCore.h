@@ -156,16 +156,19 @@ namespace OGVCore {
 	/// Abstract class for JS, Cocoa, etc backends to implement
 	/// platform-specific behavior...
 	///
-	class PlayerBackend {
+	class FrameSink {
 	public:
-
+		virtual void drawFrame(FrameBuffer *aFrame) = 0;
+	};
+	
+	///
+	/// Abstract class for JS, Cocoa, etc backends to implement
+	/// platform-specific behavior...
+	///
+	class Timer {
+	public:
 		virtual double getTimestamp() = 0;
 		virtual void setTimeout(double aDelay) = 0;
-
-		virtual void drawFrame(FrameBuffer *aFrame) = 0;
-		
-		virtual AudioFeeder *audioFeeder(AudioLayout *aLayout, AudioFeeder::Delegate *aDelegate) = 0;
-		virtual StreamFile *streamFile(const char *aURL, StreamFile::Delegate *aDelegate) = 0;
 	};
 
 	///
@@ -175,8 +178,21 @@ namespace OGVCore {
 	///
 	class Player {
 	public:
+		class Delegate {
+		public:
+			virtual Timer *timer() = 0;
+			virtual FrameSink *frameSink(FrameLayout *aLayout) = 0;
+			virtual AudioFeeder *audioFeeder(AudioLayout *aLayout, AudioFeeder::Delegate *aDelegate) = 0;
+			virtual StreamFile *streamFile(const char *aURL, StreamFile::Delegate *aDelegate) = 0;
+		
+			virtual void onLoadedMetadata() = 0;
+			virtual void onPlay() = 0;
+			virtual void onPause() = 0;
+			virtual void onEnded() = 0;
+		};
 
-		Player(PlayerBackend *backend);
+
+		Player(Delegate *delegate);
 		~Player();
 
 		void load();

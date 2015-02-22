@@ -27,7 +27,7 @@ namespace OGVCore {
     class Player::impl {
     public:
 
-        impl(PlayerBackend *backend);
+        impl(Delegate *delegate);
         ~impl();
 
         void load();
@@ -50,7 +50,9 @@ namespace OGVCore {
         bool getSeeking();
 
     private:
-        std::unique_ptr<PlayerBackend> backend;
+        std::unique_ptr<Delegate> delegate;
+        std::unique_ptr<Timer> timer;
+        std::unique_ptr<FrameSink> frameSink;
         std::unique_ptr<StreamFile> stream;
         std::unique_ptr<AudioFeeder> audioFeeder;
 
@@ -105,7 +107,7 @@ namespace OGVCore {
 
 #pragma mark - Player pimpl bounce methods
 
-    Player::Player(PlayerBackend *aBackend): pimpl(new impl(aBackend))
+    Player::Player(Delegate *aDelegate): pimpl(new impl(aDelegate))
     {
     }
 
@@ -180,7 +182,7 @@ namespace OGVCore {
 
 #pragma mark - impl methods
 
-    Player::impl::impl(PlayerBackend *aBackend): backend(aBackend)
+    Player::impl::impl(Delegate *aDelegate): delegate(aDelegate)
     {
     }
 
@@ -262,13 +264,13 @@ namespace OGVCore {
 
     void Player::impl::drawFrame()
     {
-        backend->drawFrame(yCbCrBuffer);
+        frameSink->drawFrame(yCbCrBuffer);
         doFrameComplete();
     }
 
     void Player::impl::doFrameComplete()
     {
-        lastFrameTimestamp = backend->getTimestamp();
+        lastFrameTimestamp = timer->getTimestamp();
     }
 
     void Player::impl::startBisection(double targetTime)

@@ -50,11 +50,11 @@ namespace OGVCore {
         bool getSeeking();
 
     private:
-        std::unique_ptr<Delegate> delegate;
-        std::unique_ptr<Timer> timer;
-        std::unique_ptr<FrameSink> frameSink;
-        std::unique_ptr<StreamFile> stream;
-        std::unique_ptr<AudioFeeder> audioFeeder;
+        std::shared_ptr<Delegate> delegate;
+        std::shared_ptr<Timer> timer;
+        std::shared_ptr<FrameSink> frameSink;
+        std::shared_ptr<StreamFile> stream;
+        std::shared_ptr<AudioFeeder> audioFeeder;
 
         enum {
             STATE_INITIAL,
@@ -72,7 +72,7 @@ namespace OGVCore {
 
         double lastFrameTimestamp = 0.0;
         double frameEndTimestamp = 0.0;
-        FrameBuffer *yCbCrBuffer = NULL;
+        std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
 
         void processFrame();
         void drawFrame();

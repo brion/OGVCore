@@ -46,18 +46,18 @@ namespace OGVCore {
          bool hasVideo();
          bool isAudioReady();
          bool isFrameReady();
-         AudioLayout *getAudioLayout();
-         FrameLayout *getFrameLayout();
+         std::shared_ptr<AudioLayout> getAudioLayout();
+         std::shared_ptr<FrameLayout> getFrameLayout();
 
          void receiveInput(std::vector<unsigned char> aBuffer);
          bool process();
 
          bool decodeFrame();
-         FrameBuffer *dequeueFrame();
+         std::shared_ptr<FrameBuffer> dequeueFrame();
          void discardFrame();
 
          bool decodeAudio();
-         AudioBuffer *dequeueAudio();
+         std::shared_ptr<AudioBuffer> dequeueAudio();
          void discardAudio();
 
          void flushBuffers();
@@ -146,12 +146,12 @@ namespace OGVCore {
         int buffersReceived = 0;
 
         bool frameReady;
-        FrameLayout *frameLayout;
-        FrameBuffer *queuedFrame;
+        std::shared_ptr<FrameLayout> frameLayout;
+        std::shared_ptr<FrameBuffer> queuedFrame;
 
         bool audioReady;
-        AudioLayout *audioLayout;
-        AudioBuffer *queuedAudio;
+        std::shared_ptr<AudioLayout> audioLayout;
+        std::shared_ptr<AudioBuffer> queuedAudio;
     };
 
 #pragma mark - Decoder methods
@@ -186,12 +186,12 @@ namespace OGVCore {
         return pimpl->isFrameReady();
     }
 
-    AudioLayout *Decoder::getAudioLayout()
+    std::shared_ptr<AudioLayout> Decoder::getAudioLayout()
     {
         return pimpl->getAudioLayout();
     }
 
-    FrameLayout *Decoder::getFrameLayout()
+    std::shared_ptr<FrameLayout> Decoder::getFrameLayout()
     {
         return pimpl->getFrameLayout();
     }
@@ -211,7 +211,7 @@ namespace OGVCore {
         return pimpl->decodeFrame();
     }
 
-    FrameBuffer *Decoder::dequeueFrame()
+    std::shared_ptr<FrameBuffer> Decoder::dequeueFrame()
     {
         return pimpl->dequeueFrame();
     }
@@ -226,7 +226,7 @@ namespace OGVCore {
         return pimpl->decodeAudio();
     }
 
-    AudioBuffer *Decoder::dequeueAudio()
+    std::shared_ptr<AudioBuffer> Decoder::dequeueAudio()
     {
         return pimpl->dequeueAudio();
     }
@@ -333,12 +333,12 @@ namespace OGVCore {
         return frameReady;
     }
 
-    AudioLayout *Decoder::impl::getAudioLayout()
+    std::shared_ptr<AudioLayout> Decoder::impl::getAudioLayout()
     {
         return audioLayout;
     }
 
-    FrameLayout *Decoder::impl::getFrameLayout()
+    std::shared_ptr<FrameLayout> Decoder::impl::getFrameLayout()
     {
         return frameLayout;
     }
@@ -350,17 +350,12 @@ namespace OGVCore {
         int hdec = !(theoraInfo.pixel_fmt & 1);
         int vdec = !(theoraInfo.pixel_fmt & 2);
 
-        assert(queuedFrame == NULL);
-        queuedFrame = new FrameBuffer;
-        queuedFrame->layout = frameLayout;
-        queuedFrame->timestamp = videobufTime;
-        queuedFrame->keyframeTimestamp = keyframeTime;
-        queuedFrame->bytesY = ycbcr[0].data;
-        queuedFrame->strideY = ycbcr[0].stride;
-        queuedFrame->bytesCb = ycbcr[1].data;
-        queuedFrame->strideCb = ycbcr[1].stride;
-        queuedFrame->bytesCr = ycbcr[2].data;
-        queuedFrame->strideCr = ycbcr[2].stride;
+        assert(queuedFrame.get() == NULL);
+        queuedFrame.reset(new FrameBuffer(frameLayout,
+                                          videobufTime, keyframeTime,
+                                          PlaneBuffer(ycbcr[0].data, ycbcr[1].stride),
+                                          PlaneBuffer(ycbcr[1].data, ycbcr[1].stride),
+                                          PlaneBuffer(ycbcr[2].data, ycbcr[2].stride)));
     }
 
     /* helper: push a page into the appropriate steam */
@@ -614,17 +609,13 @@ namespace OGVCore {
             if (theoraHeaders) {
                 theoraDecoderContext = th_decode_alloc(&theoraInfo, theoraSetupInfo);
 
-                frameLayout = new FrameLayout;
-                frameLayout->frameWidth = theoraInfo.frame_width;
-                frameLayout->frameHeight = theoraInfo.frame_height;
-                frameLayout->pictureWidth = theoraInfo.pic_width;
-                frameLayout->pictureHeight = theoraInfo.pic_height;
-                frameLayout->pictureOffsetX = theoraInfo.pic_x;
-                frameLayout->pictureOffsetY = theoraInfo.pic_y;
-                frameLayout->horizontalDecimation = !(theoraInfo.pixel_fmt & 1);
-                frameLayout->verticalDecimation = !(theoraInfo.pixel_fmt & 2);
-                frameLayout->aspectRatio = (double) theoraInfo.aspect_numerator / theoraInfo.aspect_denominator;
-                frameLayout->fps = (double) theoraInfo.fps_numerator / theoraInfo.fps_denominator;
+               frameLayout.reset(new FrameLayout(
+                    Size(theoraInfo.frame_width, theoraInfo.frame_height),
+                    Size(theoraInfo.pic_width, theoraInfo.pic_height),
+                    Point(theoraInfo.pic_x, theoraInfo.pic_y),
+                    Point(!(theoraInfo.pixel_fmt & 1), !(theoraInfo.pixel_fmt & 2)),
+                    (double) theoraInfo.aspect_numerator / theoraInfo.aspect_denominator,
+                    (double) theoraInfo.fps_numerator / theoraInfo.fps_denominator));
             }
 
 #ifdef OPUS
@@ -632,9 +623,7 @@ namespace OGVCore {
             if (opusHeaders) {
                 // opusDecoder should already be initialized
                 // Opus has a fixed internal sampling rate of 48000 Hz
-                audioLayout = new AudioLayout;
-                audioLayout->channelCount = opusChannels;
-                audioLayout->sampleRate = 48000;
+                audioLayout.reset(new AudioLayout(opusChannels, 48000));
             } else
 #endif
             if (vorbisHeaders) {
@@ -643,9 +632,7 @@ namespace OGVCore {
                 printf("Ogg logical stream %lx is Vorbis %d channel %ld Hz audio.\n",
                         vorbisStreamState.serialno, vorbisInfo.channels, vorbisInfo.rate);
 
-                audioLayout = new AudioLayout;
-                audioLayout->channelCount = vorbisInfo.channels;
-                audioLayout->sampleRate = vorbisInfo.rate;
+                audioLayout.reset(new AudioLayout(vorbisInfo.channels, vorbisInfo.rate));
             }
 
             appState = OGVCORE_STATE_DECODING;
@@ -768,11 +755,11 @@ namespace OGVCore {
         }
     }
 
-    FrameBuffer *Decoder::impl::dequeueFrame()
+    std::shared_ptr<FrameBuffer> Decoder::impl::dequeueFrame()
     {
-        assert(queuedFrame);
-        FrameBuffer *frame = queuedFrame;
-        queuedFrame = NULL;
+        assert(queuedFrame.get());
+        std::shared_ptr<FrameBuffer> frame(queuedFrame);
+        queuedFrame.reset();
         return frame;
     }
 
@@ -833,8 +820,8 @@ namespace OGVCore {
                             audiobufTime = (double)audiobufGranulepos / audioLayout->sampleRate;
                         }
                         OgvJsOutputAudio(pcmp, opusChannels, sampleCount - skip);
-                        assert(queuedAudio == NULL);
-                        queuedAudio = new AudioBuffer(audioLayout, sampleCount, pcmp);
+                        assert(queuedAudio.get() == NULL);
+                        queuedAudio.reset(new AudioBuffer(audioLayout, sampleCount, pcmp));
 
                         free(pcmp);
                         free(pcm);
@@ -861,8 +848,8 @@ namespace OGVCore {
                     }
                     //OgvJsOutputAudio(pcm, vorbisInfo.channels, sampleCount);
 
-                    assert(queuedAudio == NULL);
-                    queuedAudio = new AudioBuffer(audioLayout, sampleCount, (const float **)pcm);
+                    assert(queuedAudio.get() == NULL);
+                    queuedAudio.reset(new AudioBuffer(audioLayout, sampleCount, (const float **)pcm));
 
                     vorbis_synthesis_read(&vorbisDspState, sampleCount);
                 } else {
@@ -874,11 +861,11 @@ namespace OGVCore {
         return foundSome;
     }
 
-    AudioBuffer *Decoder::impl::dequeueAudio()
+    std::shared_ptr<AudioBuffer> Decoder::impl::dequeueAudio()
     {
-        assert(queuedAudio);
-        AudioBuffer *audio = queuedAudio;
-        queuedAudio = NULL;
+        assert(queuedAudio.get());
+        std::shared_ptr<AudioBuffer> audio(queuedAudio);
+        queuedAudio.reset();
         return audio;
     }
 

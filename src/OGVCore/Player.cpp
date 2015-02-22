@@ -51,6 +51,8 @@ namespace OGVCore {
 
     private:
         std::unique_ptr<PlayerBackend> backend;
+        std::unique_ptr<StreamFile> stream;
+        std::unique_ptr<AudioFeeder> audioFeeder;
 
         enum {
             STATE_INITIAL,
@@ -282,8 +284,8 @@ namespace OGVCore {
 					lastSeekPosition = position;
 					lastFrameSkipped = false;
 					codec->flush();
-					backend->seekDownload(position);
-					backend->continueDownload();
+					stream->seek(position);
+					stream->readBytes();
 					return true;
 				}
 			}

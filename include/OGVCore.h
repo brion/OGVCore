@@ -108,6 +108,52 @@ namespace OGVCore {
 
 	///
 	/// Abstract class for JS, Cocoa, etc backends to implement
+	/// platform-specific audio behavior...
+	///
+	class AudioFeeder {
+	public:
+	
+		class Delegate {
+		public:
+			virtual void onStarved() = 0;
+		};
+
+		virtual void start() = 0;
+		virtual void stop() = 0;
+		virtual void bufferData(AudioBuffer *aBuffer) = 0;
+		virtual double getPlaybackPosition() = 0;
+		virtual double getBufferedTime() = 0;
+	};
+
+	///
+	/// Abstract class for JS, Cocoa, etc backends to implement
+	/// platform-specific streaming download behavior...
+	///
+	class StreamFile {
+	public:
+
+		class Delegate {
+		public:
+			virtual void onStart() = 0;
+			virtual void onBuffer() = 0;
+			virtual void onRead() = 0;
+			virtual void onDone() = 0;
+			virtual void onError() = 0;
+		};
+
+		virtual void readBytes() = 0;
+		virtual void abort() = 0;
+		virtual void seek(long aBytePosition) = 0;
+
+		virtual const char *getResponseHeader(const char *aHeaderName) = 0;
+		virtual long bytesTotal() = 0;
+		virtual long bytesBuffered() = 0;
+		virtual long bytesRead() = 0;
+		virtual bool isSeekable() = 0;
+	};
+
+	///
+	/// Abstract class for JS, Cocoa, etc backends to implement
 	/// platform-specific behavior...
 	///
 	class PlayerBackend {
@@ -115,19 +161,11 @@ namespace OGVCore {
 
 		virtual double getTimestamp() = 0;
 		virtual void setTimeout(double aDelay) = 0;
-	
+
 		virtual void drawFrame(FrameBuffer *aFrame) = 0;
-	
-		virtual void startAudio(AudioLayout *aLayout) = 0;
-		virtual void bufferAudio(AudioBuffer *aBuffer) = 0;
-		virtual void playAudio() = 0;
-		virtual void endAudio() = 0;
-	
-		virtual void setDownloadURL(const char *aUrl) = 0;
-		virtual void startDownload() = 0;
-		virtual void seekDownload(long long aPos) = 0;
-		virtual void continueDownload() = 0;
-		virtual void endDownload() = 0;
+		
+		virtual AudioFeeder *audioFeeder(AudioLayout *aLayout, AudioFeeder::Delegate *aDelegate) = 0;
+		virtual StreamFile *streamFile(const char *aURL, StreamFile::Delegate *aDelegate) = 0;
 	};
 
 	///

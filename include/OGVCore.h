@@ -173,6 +173,8 @@ namespace OGVCore {
 		virtual void bufferData(std::shared_ptr<AudioBuffer> aBuffer) = 0;
 		virtual double getPlaybackPosition() = 0;
 		virtual double getBufferedTime() = 0;
+		virtual void mute() = 0;
+		virtual void unmute() = 0;
 	};
 
 	///
@@ -231,8 +233,8 @@ namespace OGVCore {
 		class Delegate {
 		public:
 			virtual std::shared_ptr<Timer> timer() = 0;
-			virtual std::shared_ptr<FrameSink> frameSink(FrameLayout aLayout) = 0;
-			virtual std::shared_ptr<AudioFeeder> audioFeeder(AudioLayout aLayout, std::shared_ptr<AudioFeeder::Delegate> aDelegate) = 0;
+			virtual std::shared_ptr<FrameSink> frameSink(std::shared_ptr<FrameLayout> aLayout) = 0;
+			virtual std::shared_ptr<AudioFeeder> audioFeeder(std::shared_ptr<AudioLayout> aLayout, std::shared_ptr<AudioFeeder::Delegate> aDelegate) = 0;
 			virtual std::shared_ptr<StreamFile> streamFile(std::string aURL, std::shared_ptr<StreamFile::Delegate> aDelegate) = 0;
 		
 			virtual void onLoadedMetadata() = 0;

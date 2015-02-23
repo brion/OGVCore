@@ -117,7 +117,57 @@ namespace OGVCore {
         std::shared_ptr<Player::Delegate> delegate;
         std::shared_ptr<Timer> timer;
         std::shared_ptr<FrameSink> frameSink;
+
         std::shared_ptr<AudioFeeder> audioFeeder;
+	    bool muted = false;
+		double initialAudioPosition = 0.0;
+		double initialAudioOffset = 0.0;
+
+        class AudioDelegate : public AudioFeeder::Delegate {
+            Player::impl *owner;
+        public:
+            AudioDelegate(Player::impl *aOwner) :
+                owner(aOwner)
+            {}
+
+            void onStarved() {
+                // If we're in a background tab, timers may be throttled.
+                // When audio buffers run out, go decode some more stuff.
+                owner->pingProcessing();
+            }
+        };
+
+        void initAudioFeeder()
+        {
+            audioFeeder = delegate->audioFeeder(audioInfo, std::shared_ptr<AudioFeeder::Delegate>(new AudioDelegate(this)));
+            if (muted) {
+                audioFeeder->mute();
+            }
+        }
+    
+        void startAudio(double offset)
+        {
+            audioFeeder->start();
+            initialAudioPosition = audioFeeder->getPlaybackPosition();
+            if (offset >= 0) {
+                initialAudioOffset = offset;
+            }
+        }
+    
+        void stopAudio() {
+            initialAudioOffset = getAudioTime();
+            audioFeeder->stop();
+        }
+    
+        /**
+         * Get audio playback time position in file's units
+         *
+         * @return {number} seconds since file start
+         */
+        double getAudioTime() {
+            return (audioFeeder->getPlaybackPosition() - initialAudioPosition) + initialAudioOffset;
+        }
+
 
         std::shared_ptr<StreamFile> stream;
         long byteLength;
@@ -252,7 +302,44 @@ namespace OGVCore {
             seekBisector->start();
         }
         
-        void seek(double toTime);
+        void seek(double toTime)
+        {
+            if (stream->bytesTotal() == 0) {
+                std::cout << "Cannot bisect a non-seekable stream";
+                return;
+            }
+            state = STATE_SEEKING;
+            seekTargetTime = toTime;
+            seekTargetKeypoint = -1;
+            lastFrameSkipped = false;
+            lastSeekPosition = -1;
+            codec->flush();
+        
+            if (codec->hasAudio() && audioFeeder) {
+                stopAudio();
+            }
+        
+            long offset = codec->getKeypointOffset(toTime);
+            if (offset > 0) {
+                // This file has an index!
+                //
+                // Start at the keypoint, then decode forward to the desired time.
+                //
+                seekState = SEEKSTATE_LINEAR_TO_TARGET;
+                stream->seek(offset);
+                stream->readBytes();
+            } else {
+                // No index.
+                //
+                // Bisect through the file finding our target time, then we'll
+                // have to do it again to reach the keypoint, and *then* we'll
+                // have to decode forward back to the desired time.
+                //
+                seekState = SEEKSTATE_BISECT_TO_TARGET;
+                startBisection(seekTargetTime);
+            }
+        }
+
         void continueSeekedPlayback();
         void doProcessLinearSeeking();
         void doProcessBisectionSeek();
@@ -268,6 +355,9 @@ namespace OGVCore {
             // TODO
         }
         
+        std::shared_ptr<FrameLayout> videoInfo;
+        std::shared_ptr<AudioLayout> audioInfo;
+
         void startProcessingVideo()
         {
             // TODO

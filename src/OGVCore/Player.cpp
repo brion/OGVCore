@@ -8,13 +8,14 @@
 
 // C++11
 #include <string>
+#include <iostream>
+#include <cmath>
 
 // good ol' C library
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <math.h>
 
 // And our own headers.
 #include <OGVCore.h>
@@ -24,10 +25,10 @@ namespace OGVCore {
 
 #pragma mark - Declarations
 
-    class Player::impl {
+    class Player::impl : public StreamFile::Delegate {
     public:
 
-        impl(Delegate *delegate);
+        impl(std::shared_ptr<Player::Delegate> aDelegate);
         ~impl();
 
         void load();
@@ -49,12 +50,21 @@ namespace OGVCore {
         bool getPlaying();
         bool getSeeking();
 
+        virtual void onStreamStart();
+        virtual void onStreamBuffer();
+        virtual void onStreamRead(std::vector<unsigned char> data);
+        virtual void onStreamDone();
+        virtual void onStreamError(std::string err);
+
     private:
-        std::shared_ptr<Delegate> delegate;
+        std::shared_ptr<Player::Delegate> delegate;
         std::shared_ptr<Timer> timer;
         std::shared_ptr<FrameSink> frameSink;
-        std::shared_ptr<StreamFile> stream;
         std::shared_ptr<AudioFeeder> audioFeeder;
+
+        std::shared_ptr<StreamFile> stream;
+        long byteLength;
+        double duration;
 
         enum {
             STATE_INITIAL,
@@ -68,8 +78,6 @@ namespace OGVCore {
 
         std::unique_ptr<Decoder> codec;
         
-        int bytesTotal;
-
         double lastFrameTimestamp = 0.0;
         double frameEndTimestamp = 0.0;
         std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
@@ -77,6 +85,8 @@ namespace OGVCore {
         void processFrame();
         void drawFrame();
         void doFrameComplete();
+        
+        bool started = false;
 
         // Seeking
         enum {
@@ -91,7 +101,7 @@ namespace OGVCore {
         double bisectTargetTime = 0.0;
         long lastSeekPosition = 0.0;
         bool lastFrameSkipped;
-        Bisector *seekBisector;
+        std::unique_ptr<Bisector> seekBisector;
 
         void startBisection(double targetTime);
         void seek(double toTime);
@@ -101,19 +111,18 @@ namespace OGVCore {
 
         // Main stuff!
         void doProcessing();
-        void pingProcessing(double delay);
+        void pingProcessing(double delay = -1.0);
         void startProcessingVideo();
     };
 
 #pragma mark - Player pimpl bounce methods
 
-    Player::Player(Delegate *aDelegate): pimpl(new impl(aDelegate))
-    {
-    }
+    Player::Player(std::shared_ptr<Player::Delegate> aDelegate):
+        pimpl(new impl(aDelegate))
+    {}
 
     Player::~Player()
-    {
-    }
+    {}
 
     void Player::load()
     {
@@ -182,7 +191,7 @@ namespace OGVCore {
 
 #pragma mark - impl methods
 
-    Player::impl::impl(Delegate *aDelegate):
+    Player::impl::impl(std::shared_ptr<Player::Delegate> aDelegate):
         delegate(aDelegate),
         timer(delegate->timer())
     {
@@ -200,42 +209,51 @@ namespace OGVCore {
         }
 
 		started = false;
-		stream = backend->streamFile(getSourceURL());
-		
-		stream->onstart = [this] () {
-            // Fire off the read/decode/draw loop...
-            byteLength = stream->bytesTotal();
-        
-            // If we get X-Content-Duration, that's as good as an explicit hint
-            auto durationHeader = stream->getResponseHeader("X-Content-Duration");
-            if (durationHeader.length() > 0) {
-                duration = atof(durationHeader);
-            }
-            startProcessingVideo();
-        };
-        stream->onread = [this] () {
-            // Pass chunk into the codec's buffer
-            codec->receiveInput(data);
+		stream = delegate->streamFile(getSourceURL(), this);
+	}
+	
+	void Player::impl::onStreamStart() {
+        // Fire off the read/decode/draw loop...
+        byteLength = stream->bytesTotal();
+    
+        // If we get X-Content-Duration, that's as good as an explicit hint
+        auto durationHeader = stream->getResponseHeader("X-Content-Duration");
+        if (durationHeader.length() > 0) {
+            duration = std::atof(durationHeader.c_str());
+        }
+        startProcessingVideo();
+    }
+    
+    void Player::impl::onStreamBuffer()
+    {}
 
-            // Continue the read/decode/draw loop...
+    void Player::impl::onStreamRead(std::vector<unsigned char> data)
+    {
+        // Pass chunk into the codec's buffer
+        codec->receiveInput(data);
+
+        // Continue the read/decode/draw loop...
+        pingProcessing();
+    }
+    
+    void Player::impl::onStreamDone()
+    {
+        if (state == STATE_SEEKING) {
             pingProcessing();
-        };
-        stream->ondone = [this] () {
-            if (state == State.SEEKING) {
-                pingProcessing();
-            } else if (state == State.SEEKING_END) {
-                pingProcessing();
-            } else {
-                //throw new Error('wtf is this');
-                stream = null;
-        
-                // Let the read/decode/draw loop know we're out!
-                pingProcessing();
-            }
-        };
-        stream->onerror = [this] (std::string err) {
-            cout << "reading error: " << err;
-        };
+        } else if (state == STATE_SEEKING_END) {
+            pingProcessing();
+        } else {
+            //throw new Error('wtf is this');
+            stream.reset();
+    
+            // Let the read/decode/draw loop know we're out!
+            pingProcessing();
+        }
+    }
+    
+    void Player::impl::onStreamError(std::string err)
+    {
+        std::cout << "reading error: " << err;
     }
 
     void Player::impl::process()
@@ -319,9 +337,9 @@ namespace OGVCore {
     void Player::impl::startBisection(double targetTime)
     {
 		bisectTargetTime = targetTime;
-		seekBisector = new Bisector(
+		seekBisector.reset(new Bisector(
 			/* start */ 0,
-			/* end */ bytesTotal - 1,
+			/* end */ byteLength - 1,
 			/* process */ [this] (int start, int end, int position) {
 				if (position == lastSeekPosition) {
 					return false;
@@ -334,7 +352,7 @@ namespace OGVCore {
 					return true;
 				}
 			}
-		);
+		));
 		seekBisector->start();
     }
 

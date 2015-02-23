@@ -184,11 +184,11 @@ namespace OGVCore {
 
 		class Delegate {
 		public:
-			virtual void onStreamStart() = 0;
-			virtual void onStreamBuffer() = 0;
-			virtual void onStreamRead(std::vector<unsigned char> data) = 0;
-			virtual void onStreamDone() = 0;
-			virtual void onStreamError(std::string err) = 0;
+			virtual void onStart() = 0;
+			virtual void onBuffer() = 0;
+			virtual void onRead(std::vector<unsigned char> data) = 0;
+			virtual void onDone() = 0;
+			virtual void onError(std::string err) = 0;
 		};
 
 		virtual void readBytes() = 0;
@@ -232,8 +232,8 @@ namespace OGVCore {
 		public:
 			virtual std::shared_ptr<Timer> timer() = 0;
 			virtual std::shared_ptr<FrameSink> frameSink(FrameLayout aLayout) = 0;
-			virtual std::shared_ptr<AudioFeeder> audioFeeder(AudioLayout aLayout, AudioFeeder::Delegate *aDelegate) = 0;
-			virtual std::shared_ptr<StreamFile> streamFile(std::string aURL, StreamFile::Delegate *aDelegate) = 0;
+			virtual std::shared_ptr<AudioFeeder> audioFeeder(AudioLayout aLayout, std::shared_ptr<AudioFeeder::Delegate> aDelegate) = 0;
+			virtual std::shared_ptr<StreamFile> streamFile(std::string aURL, std::shared_ptr<StreamFile::Delegate> aDelegate) = 0;
 		
 			virtual void onLoadedMetadata() = 0;
 			virtual void onPlay() = 0;

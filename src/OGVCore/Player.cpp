@@ -25,7 +25,7 @@ namespace OGVCore {
 
 #pragma mark - Declarations
 
-    class Player::impl : public StreamFile::Delegate {
+    class Player::impl {
     public:
 
         impl(std::shared_ptr<Player::Delegate> aDelegate);
@@ -50,6 +50,40 @@ namespace OGVCore {
         bool getPlaying();
         bool getSeeking();
 
+        class StreamDelegate : public StreamFile::Delegate {
+        public:
+            Player::impl *owner;
+            
+            StreamDelegate(Player::impl *aOwner) :
+                owner(aOwner)
+            {}
+
+            virtual void onStart()
+            {
+                owner->onStreamStart();
+            }
+            
+            virtual void onBuffer()
+            {
+                owner->onStreamBuffer();
+            }
+            
+            virtual void onRead(std::vector<unsigned char> data)
+            {
+                owner->onStreamRead(data);
+            }
+            
+            virtual void onDone()
+            {
+                owner->onStreamDone();
+            }
+            
+            virtual void onError(std::string err)
+            {
+                owner->onStreamError(err);
+            }
+        };
+        
         virtual void onStreamStart();
         virtual void onStreamBuffer();
         virtual void onStreamRead(std::vector<unsigned char> data);
@@ -209,7 +243,7 @@ namespace OGVCore {
         }
 
 		started = false;
-		stream = delegate->streamFile(getSourceURL(), this);
+		stream = delegate->streamFile(getSourceURL(), std::shared_ptr<StreamFile::Delegate>(new StreamDelegate(this)));
 	}
 	
 	void Player::impl::onStreamStart() {

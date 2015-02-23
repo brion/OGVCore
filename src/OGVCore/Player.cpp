@@ -194,7 +194,48 @@ namespace OGVCore {
 
     void Player::impl::load()
     {
-        // TODO
+        if (stream.get() != NULL) {
+			// already loaded.
+			return;
+        }
+
+		started = false;
+		stream = backend->streamFile(getSourceURL());
+		
+		stream->onstart = [this] () {
+            // Fire off the read/decode/draw loop...
+            byteLength = stream->bytesTotal();
+        
+            // If we get X-Content-Duration, that's as good as an explicit hint
+            auto durationHeader = stream->getResponseHeader("X-Content-Duration");
+            if (durationHeader.length() > 0) {
+                duration = atof(durationHeader);
+            }
+            startProcessingVideo();
+        };
+        stream->onread = [this] () {
+            // Pass chunk into the codec's buffer
+            codec->receiveInput(data);
+
+            // Continue the read/decode/draw loop...
+            pingProcessing();
+        };
+        stream->ondone = [this] () {
+            if (state == State.SEEKING) {
+                pingProcessing();
+            } else if (state == State.SEEKING_END) {
+                pingProcessing();
+            } else {
+                //throw new Error('wtf is this');
+                stream = null;
+        
+                // Let the read/decode/draw loop know we're out!
+                pingProcessing();
+            }
+        };
+        stream->onerror = [this] (std::string err) {
+            cout << "reading error: " << err;
+        };
     }
 
     void Player::impl::process()

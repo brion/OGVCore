@@ -28,27 +28,82 @@ namespace OGVCore {
     class Player::impl {
     public:
 
-        impl(std::shared_ptr<Player::Delegate> aDelegate);
-        ~impl();
+        impl(std::shared_ptr<Player::Delegate> aDelegate) :
+            delegate(aDelegate),
+            timer(delegate->timer())
+        {}
 
-        void load();
-        void process();
+        ~impl()
+        {}
 
-        double getDuration();
-        double getVideoWidth();
-        double getVideoHeight();
+        void load()
+        {
+            if (stream.get() != NULL) {
+                // already loaded.
+                return;
+            }
 
-        std::string getSourceURL();
-        void setSourceURL(std::string aUrl);
+            started = false;
+            stream = delegate->streamFile(getSourceURL(), std::shared_ptr<StreamFile::Delegate>(new StreamDelegate(this)));
+        }
 
-        double getCurrentTime();
-        void setCurrentTime(double aTime);
+        void process()
+        {
+            // TODO
+        }
 
-        bool getPaused();
-        void setPaused(bool aPaused);
+        double getDuration()
+        {
+            return NAN; // TODO
+        }
 
-        bool getPlaying();
-        bool getSeeking();
+        double getVideoWidth()
+        {
+            return NAN; // TODO
+        }
+
+        double getVideoHeight()
+        {
+            return NAN; // TODO
+        }
+
+        std::string getSourceURL()
+        {
+            return NULL; // TODO
+        }
+
+        void setSourceURL(std::string aUrl)
+        {
+        }
+
+        double getCurrentTime()
+        {
+            return NAN; // TODO
+        }
+        
+        void setCurrentTime(double aTime)
+        {
+            // TODO
+        }
+
+        bool getPaused()
+        {
+            return false; // TODO
+        }
+        void setPaused(bool aPaused)
+        {
+            // TODO
+        }
+
+        bool getPlaying()
+        {
+            return false; // TODO
+        }
+        
+        bool getSeeking()
+        {
+            return false; // TODO
+        }
 
     private:
         std::shared_ptr<Player::Delegate> delegate;
@@ -127,15 +182,27 @@ namespace OGVCore {
 
         std::unique_ptr<Decoder> codec;
         
+        bool started = false;
         double lastFrameTimestamp = 0.0;
         double frameEndTimestamp = 0.0;
         std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
 
-        void processFrame();
-        void drawFrame();
-        void doFrameComplete();
-        
-        bool started = false;
+        void processFrame()
+        {
+            yCbCrBuffer = codec->dequeueFrame();
+            frameEndTimestamp = yCbCrBuffer->timestamp;
+        }
+
+        void drawFrame()
+        {
+            frameSink->drawFrame(yCbCrBuffer);
+            doFrameComplete();
+        }
+
+        void doFrameComplete()
+        {
+            lastFrameTimestamp = timer->getTimestamp();
+        }
 
         // Seeking
         enum {
@@ -152,16 +219,48 @@ namespace OGVCore {
         bool lastFrameSkipped;
         std::unique_ptr<Bisector> seekBisector;
 
-        void startBisection(double targetTime);
+        void startBisection(double targetTime)
+        {
+            bisectTargetTime = targetTime;
+            seekBisector.reset(new Bisector(
+                /* start */ 0,
+                /* end */ byteLength - 1,
+                /* process */ [this] (int start, int end, int position) {
+                    if (position == lastSeekPosition) {
+                        return false;
+                    } else {
+                        lastSeekPosition = position;
+                        lastFrameSkipped = false;
+                        codec->flush();
+                        stream->seek(position);
+                        stream->readBytes();
+                        return true;
+                    }
+                }
+            ));
+            seekBisector->start();
+        }
+        
         void seek(double toTime);
         void continueSeekedPlayback();
         void doProcessLinearSeeking();
         void doProcessBisectionSeek();
 
         // Main stuff!
-        void doProcessing();
-        void pingProcessing(double delay = -1.0);
-        void startProcessingVideo();
+        void doProcessing()
+        {
+            // TODO
+        }
+        
+        void pingProcessing(double delay = -1.0)
+        {
+            // TODO
+        }
+        
+        void startProcessingVideo()
+        {
+            // TODO
+        }
     };
 
 #pragma mark - Player pimpl bounce methods
@@ -236,157 +335,6 @@ namespace OGVCore {
     bool Player::getSeeking()
     {
         return pimpl->getSeeking();
-    }
-
-#pragma mark - impl methods
-
-    Player::impl::impl(std::shared_ptr<Player::Delegate> aDelegate):
-        delegate(aDelegate),
-        timer(delegate->timer())
-    {
-    }
-
-    Player::impl::~impl()
-    {
-    }
-
-    void Player::impl::load()
-    {
-        if (stream.get() != NULL) {
-			// already loaded.
-			return;
-        }
-
-		started = false;
-		stream = delegate->streamFile(getSourceURL(), std::shared_ptr<StreamFile::Delegate>(new StreamDelegate(this)));
-	}
-
-    void Player::impl::process()
-    {
-        // TODO
-    }
-
-    double Player::impl::getDuration()
-    {
-        return NAN; // TODO
-    }
-
-    double Player::impl::getVideoWidth()
-    {
-        return NAN; // TODO
-    }
-
-    double Player::impl::getVideoHeight()
-    {
-        return NAN; // TODO
-    }
-
-    std::string Player::impl::getSourceURL()
-    {
-        return NULL;
-    }
-
-    void Player::impl::setSourceURL(std::string aUrl)
-    {
-        // TODO
-    }
-
-    double Player::impl::getCurrentTime()
-    {
-        return NAN; // TODO
-    }
-
-    void Player::impl::setCurrentTime(double aTime)
-    {
-        // TODO
-    }
-
-    bool Player::impl::getPaused()
-    {
-        return false; // TODO
-    }
-
-    void Player::impl::setPaused(bool aPaused)
-    {
-        // TODO
-    }
-
-    bool Player::impl::getPlaying()
-    {
-        return false; // TODO
-    }
-
-    bool Player::impl::getSeeking()
-    {
-        return false; // TODO
-    }
-
-
-    void Player::impl::processFrame()
-    {
-        yCbCrBuffer = codec->dequeueFrame();
-        frameEndTimestamp = yCbCrBuffer->timestamp;
-    }
-
-    void Player::impl::drawFrame()
-    {
-        frameSink->drawFrame(yCbCrBuffer);
-        doFrameComplete();
-    }
-
-    void Player::impl::doFrameComplete()
-    {
-        lastFrameTimestamp = timer->getTimestamp();
-    }
-
-    void Player::impl::startBisection(double targetTime)
-    {
-		bisectTargetTime = targetTime;
-		seekBisector.reset(new Bisector(
-			/* start */ 0,
-			/* end */ byteLength - 1,
-			/* process */ [this] (int start, int end, int position) {
-				if (position == lastSeekPosition) {
-					return false;
-				} else {
-					lastSeekPosition = position;
-					lastFrameSkipped = false;
-					codec->flush();
-					stream->seek(position);
-					stream->readBytes();
-					return true;
-				}
-			}
-		));
-		seekBisector->start();
-    }
-
-    void Player::impl::seek(double toTime)
-    {
-    }
-
-    void Player::impl::continueSeekedPlayback()
-    {
-    }
-
-    void Player::impl::doProcessLinearSeeking()
-    {
-    }
-
-    void Player::impl::doProcessBisectionSeek()
-    {
-    }
-
-    void Player::impl::doProcessing()
-    {
-    }
-
-    void Player::impl::pingProcessing(double delay)
-    {
-    }
-
-    void Player::impl::startProcessingVideo()
-    {
     }
 
 }

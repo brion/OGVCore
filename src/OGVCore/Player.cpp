@@ -50,6 +50,17 @@ namespace OGVCore {
         bool getPlaying();
         bool getSeeking();
 
+    private:
+        std::shared_ptr<Player::Delegate> delegate;
+        std::shared_ptr<Timer> timer;
+        std::shared_ptr<FrameSink> frameSink;
+        std::shared_ptr<AudioFeeder> audioFeeder;
+
+        std::shared_ptr<StreamFile> stream;
+        long byteLength;
+        double duration;
+
+
         class StreamDelegate : public StreamFile::Delegate {
         public:
             Player::impl *owner;
@@ -103,16 +114,6 @@ namespace OGVCore {
                 std::cout << "reading error: " << err;
             }
         };
-
-    private:
-        std::shared_ptr<Player::Delegate> delegate;
-        std::shared_ptr<Timer> timer;
-        std::shared_ptr<FrameSink> frameSink;
-        std::shared_ptr<AudioFeeder> audioFeeder;
-
-        std::shared_ptr<StreamFile> stream;
-        long byteLength;
-        double duration;
 
         enum {
             STATE_INITIAL,

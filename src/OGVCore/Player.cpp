@@ -60,35 +60,49 @@ namespace OGVCore {
 
             virtual void onStart()
             {
-                owner->onStreamStart();
+                // Fire off the read/decode/draw loop...
+                owner->byteLength = owner->stream->bytesTotal();
+    
+                // If we get X-Content-Duration, that's as good as an explicit hint
+                auto durationHeader = owner->stream->getResponseHeader("X-Content-Duration");
+                if (durationHeader.length() > 0) {
+                    owner->duration = std::atof(durationHeader.c_str());
+                }
+                owner->startProcessingVideo();
             }
             
             virtual void onBuffer()
-            {
-                owner->onStreamBuffer();
-            }
+            {}
             
             virtual void onRead(std::vector<unsigned char> data)
             {
-                owner->onStreamRead(data);
+                // Pass chunk into the codec's buffer
+                owner->codec->receiveInput(data);
+
+                // Continue the read/decode/draw loop...
+                owner->pingProcessing();
             }
             
             virtual void onDone()
             {
-                owner->onStreamDone();
+                if (owner->state == STATE_SEEKING) {
+                    owner->pingProcessing();
+                } else if (owner->state == STATE_SEEKING_END) {
+                    owner->pingProcessing();
+                } else {
+                    //throw new Error('wtf is this');
+                    owner->stream.reset();
+    
+                    // Let the read/decode/draw loop know we're out!
+                    owner->pingProcessing();
+                }
             }
             
             virtual void onError(std::string err)
             {
-                owner->onStreamError(err);
+                std::cout << "reading error: " << err;
             }
         };
-        
-        virtual void onStreamStart();
-        virtual void onStreamBuffer();
-        virtual void onStreamRead(std::vector<unsigned char> data);
-        virtual void onStreamDone();
-        virtual void onStreamError(std::string err);
 
     private:
         std::shared_ptr<Player::Delegate> delegate;
@@ -245,50 +259,6 @@ namespace OGVCore {
 		started = false;
 		stream = delegate->streamFile(getSourceURL(), std::shared_ptr<StreamFile::Delegate>(new StreamDelegate(this)));
 	}
-	
-	void Player::impl::onStreamStart() {
-        // Fire off the read/decode/draw loop...
-        byteLength = stream->bytesTotal();
-    
-        // If we get X-Content-Duration, that's as good as an explicit hint
-        auto durationHeader = stream->getResponseHeader("X-Content-Duration");
-        if (durationHeader.length() > 0) {
-            duration = std::atof(durationHeader.c_str());
-        }
-        startProcessingVideo();
-    }
-    
-    void Player::impl::onStreamBuffer()
-    {}
-
-    void Player::impl::onStreamRead(std::vector<unsigned char> data)
-    {
-        // Pass chunk into the codec's buffer
-        codec->receiveInput(data);
-
-        // Continue the read/decode/draw loop...
-        pingProcessing();
-    }
-    
-    void Player::impl::onStreamDone()
-    {
-        if (state == STATE_SEEKING) {
-            pingProcessing();
-        } else if (state == STATE_SEEKING_END) {
-            pingProcessing();
-        } else {
-            //throw new Error('wtf is this');
-            stream.reset();
-    
-            // Let the read/decode/draw loop know we're out!
-            pingProcessing();
-        }
-    }
-    
-    void Player::impl::onStreamError(std::string err)
-    {
-        std::cout << "reading error: " << err;
-    }
 
     void Player::impl::process()
     {

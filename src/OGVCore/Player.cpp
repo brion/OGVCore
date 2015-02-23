@@ -54,7 +54,15 @@ namespace OGVCore {
 
         double getDuration()
         {
-            return NAN; // TODO
+			if (codec && loadedMetadata) {
+				if (!isnan(duration)) {
+					return duration;
+				} else {
+					return INFINITY;
+				}
+			} else {
+				return NAN;
+			}
         }
 
         double getVideoWidth()
@@ -115,11 +123,11 @@ namespace OGVCore {
         long byteLength;
         double duration;
 
-
         class StreamDelegate : public StreamFile::Delegate {
-        public:
+        private:
             Player::impl *owner;
-            
+        
+        public:
             StreamDelegate(Player::impl *aOwner) :
                 owner(aOwner)
             {}
@@ -181,11 +189,14 @@ namespace OGVCore {
         } state = STATE_INITIAL;
 
         std::unique_ptr<Decoder> codec;
-        
         bool started = false;
+		bool paused = true;
+		bool ended = false;
+		bool loadedMetadata = false;
+
+        std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
         double lastFrameTimestamp = 0.0;
         double frameEndTimestamp = 0.0;
-        std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
 
         void processFrame()
         {

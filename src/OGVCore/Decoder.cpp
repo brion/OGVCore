@@ -353,7 +353,7 @@ namespace OGVCore {
         assert(queuedFrame.get() == NULL);
         queuedFrame.reset(new FrameBuffer(frameLayout,
                                           videobufTime, keyframeTime,
-                                          PlaneBuffer(ycbcr[0].data, ycbcr[1].stride),
+                                          PlaneBuffer(ycbcr[0].data, ycbcr[0].stride),
                                           PlaneBuffer(ycbcr[1].data, ycbcr[1].stride),
                                           PlaneBuffer(ycbcr[2].data, ycbcr[2].stride)));
     }
@@ -367,9 +367,7 @@ namespace OGVCore {
 #ifdef OPUS
         if (opusHeaders) ogg_stream_pagein(&opusStreamState, page);
 #endif
-#ifdef SKELETON
         if (skeletonHeaders) ogg_stream_pagein(&skeletonStreamState, page);
-#endif
         return 0;
     }
 

@@ -54,15 +54,15 @@ namespace OGVCore {
 
         double getDuration()
         {
-			if (codec && loadedMetadata) {
-				if (!isnan(duration)) {
-					return duration;
-				} else {
-					return INFINITY;
-				}
-			} else {
-				return NAN;
-			}
+            if (codec && loadedMetadata) {
+                if (!isnan(duration)) {
+                    return duration;
+                } else {
+                    return INFINITY;
+                }
+            } else {
+                return NAN;
+            }
         }
 
         double getVideoWidth()
@@ -88,7 +88,7 @@ namespace OGVCore {
         {
             return NAN; // TODO
         }
-        
+    
         void setCurrentTime(double aTime)
         {
             // TODO
@@ -107,7 +107,7 @@ namespace OGVCore {
         {
             return false; // TODO
         }
-        
+    
         bool getSeeking()
         {
             return false; // TODO
@@ -119,9 +119,9 @@ namespace OGVCore {
         std::shared_ptr<FrameSink> frameSink;
 
         std::shared_ptr<AudioFeeder> audioFeeder;
-	    bool muted = false;
-		double initialAudioPosition = 0.0;
-		double initialAudioOffset = 0.0;
+        bool muted = false;
+        double initialAudioPosition = 0.0;
+        double initialAudioOffset = 0.0;
 
         class AudioDelegate : public AudioFeeder::Delegate {
             Player::impl *owner;
@@ -144,7 +144,7 @@ namespace OGVCore {
                 audioFeeder->mute();
             }
         }
-    
+
         void startAudio(double offset)
         {
             audioFeeder->start();
@@ -153,12 +153,12 @@ namespace OGVCore {
                 initialAudioOffset = offset;
             }
         }
-    
+
         void stopAudio() {
             initialAudioOffset = getAudioTime();
             audioFeeder->stop();
         }
-    
+
         /**
          * Get audio playback time position in file's units
          *
@@ -176,7 +176,7 @@ namespace OGVCore {
         class StreamDelegate : public StreamFile::Delegate {
         private:
             Player::impl *owner;
-        
+    
         public:
             StreamDelegate(Player::impl *aOwner) :
                 owner(aOwner)
@@ -186,7 +186,7 @@ namespace OGVCore {
             {
                 // Fire off the read/decode/draw loop...
                 owner->byteLength = owner->stream->bytesTotal();
-    
+
                 // If we get X-Content-Duration, that's as good as an explicit hint
                 auto durationHeader = owner->stream->getResponseHeader("X-Content-Duration");
                 if (durationHeader.length() > 0) {
@@ -194,10 +194,10 @@ namespace OGVCore {
                 }
                 owner->startProcessingVideo();
             }
-            
+        
             virtual void onBuffer()
             {}
-            
+        
             virtual void onRead(std::vector<unsigned char> data)
             {
                 // Pass chunk into the codec's buffer
@@ -206,7 +206,7 @@ namespace OGVCore {
                 // Continue the read/decode/draw loop...
                 owner->pingProcessing();
             }
-            
+        
             virtual void onDone()
             {
                 if (owner->state == STATE_SEEKING) {
@@ -216,12 +216,12 @@ namespace OGVCore {
                 } else {
                     //throw new Error('wtf is this');
                     owner->stream.reset();
-    
+
                     // Let the read/decode/draw loop know we're out!
                     owner->pingProcessing();
                 }
             }
-            
+        
             virtual void onError(std::string err)
             {
                 std::cout << "reading error: " << err;
@@ -240,9 +240,9 @@ namespace OGVCore {
 
         std::unique_ptr<Decoder> codec;
         bool started = false;
-		bool paused = true;
-		bool ended = false;
-		bool loadedMetadata = false;
+        bool paused = true;
+        bool ended = false;
+        bool loadedMetadata = false;
 
         std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
         double lastFrameTimestamp = 0.0;
@@ -301,7 +301,7 @@ namespace OGVCore {
             ));
             seekBisector->start();
         }
-        
+    
         void seek(double toTime)
         {
             if (stream->bytesTotal() == 0) {
@@ -314,11 +314,11 @@ namespace OGVCore {
             lastFrameSkipped = false;
             lastSeekPosition = -1;
             codec->flush();
-        
+    
             if (codec->hasAudio() && audioFeeder) {
                 stopAudio();
             }
-        
+    
             long offset = codec->getKeypointOffset(toTime);
             if (offset > 0) {
                 // This file has an index!
@@ -349,12 +349,12 @@ namespace OGVCore {
         {
             // TODO
         }
-        
+    
         void pingProcessing(double delay = -1.0)
         {
             // TODO
         }
-        
+    
         std::shared_ptr<FrameLayout> videoInfo;
         std::shared_ptr<AudioLayout> audioInfo;
 

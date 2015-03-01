@@ -315,12 +315,12 @@ namespace OGVCore {
 
     bool Decoder::impl::hasAudio()
     {
-        return (audioLayout != NULL);
+        return (audioLayout.get() != NULL);
     }
 
     bool Decoder::impl::hasVideo()
     {
-        return (frameLayout != NULL);
+        return (frameLayout.get() != NULL);
     }
 
     bool Decoder::impl::isAudioReady()
@@ -780,7 +780,7 @@ namespace OGVCore {
 #ifdef OPUS
         if (opusHeaders) {
             if (ogg_stream_packetout(&opusStreamState, &audioPacket) > 0) {
-                float *output = malloc(sizeof (float)*OPUS_MAX_FRAME_SIZE * opusChannels);
+                float *output = (float *)malloc(sizeof (float)*OPUS_MAX_FRAME_SIZE * opusChannels);
                 int sampleCount = opus_multistream_decode_float(opusDecoder, (unsigned char*) audioPacket.packet, audioPacket.bytes, output, OPUS_MAX_FRAME_SIZE, 0);
                 if (sampleCount < 0) {
                     printf("Opus decoding error, code %d\n", sampleCount);
@@ -804,8 +804,8 @@ namespace OGVCore {
                     } else {
                         foundSome = 1;
                         // reorder Opus' interleaved samples into two-dimensional [channel][sample] form
-                        float *pcm = malloc(sizeof (*pcm)*(sampleCount - skip) * opusChannels);
-                        float **pcmp = malloc(sizeof (*pcmp) * opusChannels);
+                        float *pcm = (float *)malloc(sizeof (*pcm)*(sampleCount - skip) * opusChannels);
+                        float **pcmp = (float **)malloc(sizeof (*pcmp) * opusChannels);
                         for (int c = 0; c < opusChannels; ++c) {
                             pcmp[c] = pcm + c * (sampleCount - skip);
                             for (int s = skip; s < sampleCount; ++s) {
@@ -817,9 +817,8 @@ namespace OGVCore {
                             audiobufGranulepos += (sampleCount - skip);
                             audiobufTime = (double)audiobufGranulepos / audioLayout->sampleRate;
                         }
-                        OgvJsOutputAudio(pcmp, opusChannels, sampleCount - skip);
                         assert(queuedAudio.get() == NULL);
-                        queuedAudio.reset(new AudioBuffer(audioLayout, sampleCount, pcmp));
+                        queuedAudio.reset(new AudioBuffer(audioLayout, sampleCount, (const float **)pcmp));
 
                         free(pcmp);
                         free(pcm);

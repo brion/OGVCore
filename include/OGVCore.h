@@ -20,6 +20,16 @@ namespace OGVCore {
 			x(aX),
 			y(aY)
 		{}
+		
+		Point(const Point &aPoint) :
+			x(aPoint.x),
+			y(aPoint.y)
+		{}
+		
+		Point() :
+			x(0),
+			y(0)
+		{}
 	};
 	
 	struct Size {
@@ -29,6 +39,16 @@ namespace OGVCore {
 		Size(int aWidth, int aHeight) :
 			width(aWidth),
 			height(aHeight)
+		{}
+		
+		Size(const Size &aSize) :
+			width(aSize.width),
+			height(aSize.height)
+		{}
+		
+		Size() :
+			width(0),
+			height(0)
 		{}
 	};
 	

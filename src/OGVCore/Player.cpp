@@ -246,7 +246,7 @@ namespace OGVCore {
         bool ended = false;
         bool loadedMetadata = false;
 
-        std::shared_ptr<FrameBuffer> yCbCrBuffer = NULL;
+        std::shared_ptr<FrameBuffer> yCbCrBuffer;
         double lastFrameTimestamp = 0.0;
         double frameEndTimestamp = 0.0;
 

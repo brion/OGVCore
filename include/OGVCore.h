@@ -232,10 +232,11 @@ namespace OGVCore {
 	public:
 		class Delegate {
 		public:
-			virtual std::shared_ptr<Timer> timer() = 0;
-			virtual std::shared_ptr<FrameSink> frameSink(std::shared_ptr<FrameLayout> aLayout) = 0;
-			virtual std::shared_ptr<AudioFeeder> audioFeeder(std::shared_ptr<AudioLayout> aLayout, std::shared_ptr<AudioFeeder::Delegate> aDelegate) = 0;
-			virtual std::shared_ptr<StreamFile> streamFile(std::string aURL, std::shared_ptr<StreamFile::Delegate> aDelegate) = 0;
+			virtual std::unique_ptr<Timer> timer() = 0;
+			virtual std::unique_ptr<FrameSink> frameSink(std::unique_ptr<FrameLayout> aLayout) = 0;
+			virtual std::unique_ptr<AudioFeeder> audioFeeder(std::shared_ptr<AudioLayout> aLayout,
+			                                                 std::unique_ptr<AudioFeeder::Delegate> aDelegate) = 0;
+			virtual std::unique_ptr<StreamFile> streamFile(std::string aURL, std::unique_ptr<StreamFile::Delegate> aDelegate) = 0;
 		
 			virtual void onLoadedMetadata() = 0;
 			virtual void onPlay() = 0;

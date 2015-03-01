@@ -44,7 +44,8 @@ namespace OGVCore {
             }
 
             started = false;
-            stream = delegate->streamFile(getSourceURL(), std::shared_ptr<StreamFile::Delegate>(new StreamDelegate(this)));
+            stream = delegate->streamFile(getSourceURL(),
+                std::unique_ptr<StreamFile::Delegate>(new StreamDelegate(this)));
         }
 
         void process()
@@ -139,7 +140,8 @@ namespace OGVCore {
 
         void initAudioFeeder()
         {
-            audioFeeder = delegate->audioFeeder(audioInfo, std::shared_ptr<AudioFeeder::Delegate>(new AudioDelegate(this)));
+            audioFeeder = delegate->audioFeeder(audioInfo,
+                std::unique_ptr<AudioFeeder::Delegate>(new AudioDelegate(this)));
             if (muted) {
                 audioFeeder->mute();
             }

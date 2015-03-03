@@ -53,10 +53,10 @@ namespace OGVCore {
 	};
 	
 	struct FrameLayout {
-		const Size frame;
-		const Size picture;
-		const Point offset;
-		const Point subsampling;
+		Size frame;
+		Size picture;
+		Point offset;
+		Point subsampling;
 		double aspectRatio;
 		double fps;
 		
@@ -75,18 +75,28 @@ namespace OGVCore {
 	//
 	struct PlaneBuffer {
 		const unsigned char *bytes;
-		const int stride;
+		int stride;
 		
 		PlaneBuffer(const unsigned char *aBytes, int aStride) :
 			bytes(aBytes),
 			stride(aStride)
 		{}
+		
+		PlaneBuffer(const PlaneBuffer &aPlaneBuffer) :
+			bytes(aPlaneBuffer.bytes),
+			stride(aPlaneBuffer.stride)
+		{}
+		
+		PlaneBuffer() :
+			bytes(0),
+			stride(0)
+		{}
 	};
 
 	struct FrameBuffer {
 		std::shared_ptr<FrameLayout> layout;
-		const double timestamp;
-		const double keyframeTimestamp;
+		double timestamp;
+		double keyframeTimestamp;
 		PlaneBuffer Y;
 		PlaneBuffer Cb;
 		PlaneBuffer Cr;
@@ -105,8 +115,8 @@ namespace OGVCore {
 
 
 	struct AudioLayout {
-		const int channelCount;
-		const int sampleRate;
+		int channelCount;
+		int sampleRate;
 		
 		AudioLayout(int aChannelCount, int aSampleRate) :
 			channelCount(aChannelCount),
@@ -116,7 +126,7 @@ namespace OGVCore {
 
 	struct AudioBuffer {
 		std::shared_ptr<AudioLayout> layout;
-		const int sampleCount;
+		int sampleCount;
 		std::vector<std::vector<float>> samples;
 	
 		// Convenience constructor for the C library output

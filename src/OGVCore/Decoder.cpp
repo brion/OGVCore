@@ -39,34 +39,36 @@ namespace OGVCore {
 
     class Decoder::impl {
     public:
-        impl();
+        impl(std::unique_ptr<Decoder::Delegate> &&aDelegate);
         ~impl();
 
-         bool hasAudio();
-         bool hasVideo();
-         bool isAudioReady();
-         bool isFrameReady();
-         std::shared_ptr<AudioLayout> getAudioLayout();
-         std::shared_ptr<FrameLayout> getFrameLayout();
+        bool hasAudio();
+        bool hasVideo();
+        bool isAudioReady();
+        bool isFrameReady();
+        std::shared_ptr<AudioLayout> getAudioLayout();
+        std::shared_ptr<FrameLayout> getFrameLayout();
 
-         void receiveInput(std::string aBuffer);
-         bool process();
+        void receiveInput(std::string aBuffer);
+        bool process();
 
-         bool decodeFrame();
-         std::shared_ptr<FrameBuffer> dequeueFrame();
-         void discardFrame();
+        bool decodeFrame();
+        std::shared_ptr<FrameBuffer> dequeueFrame();
+        void discardFrame();
 
-         bool decodeAudio();
-         std::shared_ptr<AudioBuffer> dequeueAudio();
-         void discardAudio();
+        bool decodeAudio();
+        std::shared_ptr<AudioBuffer> dequeueAudio();
+        void discardAudio();
 
-         void flushBuffers();
+        void flushBuffers();
 
-         long getSegmentLength();
-         double getDuration();
-         long getKeypointOffset(long time_ms);
+        long getSegmentLength();
+        double getDuration();
+        long getKeypointOffset(long time_ms);
 
     private:
+        std::unique_ptr<Decoder::Delegate> delegate;
+
         void video_write();
         int queue_page(ogg_page *page);
 
@@ -156,13 +158,12 @@ namespace OGVCore {
 
 #pragma mark - Decoder methods
 
-    Decoder::Decoder(): pimpl(new impl)
-    {
-    }
+    Decoder::Decoder(std::unique_ptr<Decoder::Delegate> &&aDelegate):
+        pimpl(new impl(std::forward<std::unique_ptr<Decoder::Delegate>>(aDelegate)))
+    {}
 
     Decoder::~Decoder()
-    {
-    }
+    {}
 
 #pragma mark - public method pimpl bouncers
 
@@ -260,7 +261,8 @@ namespace OGVCore {
 
 #pragma mark - implementation methods
 
-    Decoder::impl::impl()
+    Decoder::impl::impl(std::unique_ptr<Decoder::Delegate> &&aDelegate) :
+        delegate(std::forward<std::unique_ptr<Decoder::Delegate>>(aDelegate))
     {
         processAudio = 1;
         processVideo = 1;

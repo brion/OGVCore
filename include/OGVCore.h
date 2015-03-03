@@ -152,7 +152,13 @@ namespace OGVCore {
 	///
 	class Decoder {
 	public:
-		Decoder();
+
+		class Delegate {
+		public:
+			virtual void onLoadedMetadata() = 0;
+		};
+		
+		Decoder(std::unique_ptr<Decoder::Delegate> &&aDelegate);
 		~Decoder();
 	
 		bool hasAudio() const;
@@ -269,8 +275,8 @@ namespace OGVCore {
 			virtual std::unique_ptr<Timer> timer() = 0;
 			virtual std::unique_ptr<FrameSink> frameSink(std::unique_ptr<FrameLayout> aLayout) = 0;
 			virtual std::unique_ptr<AudioFeeder> audioFeeder(std::shared_ptr<AudioLayout> aLayout,
-			                                                 std::unique_ptr<AudioFeeder::Delegate> aDelegate) = 0;
-			virtual std::unique_ptr<StreamFile> streamFile(std::string aURL, std::unique_ptr<StreamFile::Delegate> aDelegate) = 0;
+			                                                 std::unique_ptr<AudioFeeder::Delegate> &&aDelegate) = 0;
+			virtual std::unique_ptr<StreamFile> streamFile(std::string aURL, std::unique_ptr<StreamFile::Delegate> &&aDelegate) = 0;
 		
 			virtual void onLoadedMetadata() = 0;
 			virtual void onPlay() = 0;
@@ -279,7 +285,7 @@ namespace OGVCore {
 		};
 
 
-		Player(std::shared_ptr<Delegate> delegate);
+		Player(std::unique_ptr<Delegate> &&aDelegate);
 		~Player();
 
 		void load();

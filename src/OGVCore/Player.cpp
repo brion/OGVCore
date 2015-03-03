@@ -29,7 +29,7 @@ namespace OGVCore {
     public:
 
         impl(std::unique_ptr<Player::Delegate> &&aDelegate) :
-            delegate(std::forward<std::unique_ptr<Player::Delegate>>(aDelegate)),
+            delegate(std::move(aDelegate)),
             timer(delegate->timer())
         {}
 
@@ -369,7 +369,7 @@ namespace OGVCore {
 #pragma mark - Player pimpl bounce methods
 
     Player::Player(std::unique_ptr<Player::Delegate> &&aDelegate):
-        pimpl(new impl(std::forward<std::unique_ptr<Player::Delegate>>(aDelegate)))
+        pimpl(new impl(std::move(aDelegate)))
     {}
 
     Player::~Player()

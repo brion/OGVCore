@@ -159,7 +159,7 @@ namespace OGVCore {
 #pragma mark - Decoder methods
 
     Decoder::Decoder(std::unique_ptr<Decoder::Delegate> &&aDelegate):
-        pimpl(new impl(std::forward<std::unique_ptr<Decoder::Delegate>>(aDelegate)))
+        pimpl(new impl(std::move(aDelegate)))
     {}
 
     Decoder::~Decoder()
@@ -262,7 +262,7 @@ namespace OGVCore {
 #pragma mark - implementation methods
 
     Decoder::impl::impl(std::unique_ptr<Decoder::Delegate> &&aDelegate) :
-        delegate(std::forward<std::unique_ptr<Decoder::Delegate>>(aDelegate))
+        delegate(std::move(aDelegate))
     {
         processAudio = 1;
         processVideo = 1;

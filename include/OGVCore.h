@@ -155,14 +155,14 @@ namespace OGVCore {
 		Decoder();
 		~Decoder();
 	
-		bool hasAudio();
-		bool hasVideo();
-		bool isAudioReady();
-		bool isFrameReady();
-		std::shared_ptr<AudioLayout> getAudioLayout();
-		std::shared_ptr<FrameLayout> getFrameLayout();
+		bool hasAudio() const;
+		bool hasVideo() const;
+		bool isAudioReady() const;
+		bool isFrameReady() const;
+		std::shared_ptr<AudioLayout> getAudioLayout() const;
+		std::shared_ptr<FrameLayout> getFrameLayout() const;
 
-		void receiveInput(std::vector<unsigned char> aBuffer);
+		void receiveInput(std::string aBuffer);
 		bool process();
 
 		bool decodeFrame();
@@ -222,7 +222,7 @@ namespace OGVCore {
 		public:
 			virtual void onStart() = 0;
 			virtual void onBuffer() = 0;
-			virtual void onRead(std::vector<unsigned char> data) = 0;
+			virtual void onRead(std::string data) = 0;
 			virtual void onDone() = 0;
 			virtual void onError(std::string err) = 0;
 		};

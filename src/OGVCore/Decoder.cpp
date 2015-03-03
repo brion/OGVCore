@@ -49,7 +49,7 @@ namespace OGVCore {
          std::shared_ptr<AudioLayout> getAudioLayout();
          std::shared_ptr<FrameLayout> getFrameLayout();
 
-         void receiveInput(std::vector<unsigned char> aBuffer);
+         void receiveInput(std::string aBuffer);
          bool process();
 
          bool decodeFrame();
@@ -166,37 +166,37 @@ namespace OGVCore {
 
 #pragma mark - public method pimpl bouncers
 
-    bool Decoder::hasAudio()
+    bool Decoder::hasAudio() const
     {
         return pimpl->hasAudio();
     }
 
-    bool Decoder::hasVideo()
+    bool Decoder::hasVideo() const
     {
         return pimpl->hasVideo();
     }
 
-    bool Decoder::isAudioReady()
+    bool Decoder::isAudioReady() const
     {
         return pimpl->isAudioReady();
     }
 
-    bool Decoder::isFrameReady()
+    bool Decoder::isFrameReady() const
     {
         return pimpl->isFrameReady();
     }
 
-    std::shared_ptr<AudioLayout> Decoder::getAudioLayout()
+    std::shared_ptr<AudioLayout> Decoder::getAudioLayout() const
     {
         return pimpl->getAudioLayout();
     }
 
-    std::shared_ptr<FrameLayout> Decoder::getFrameLayout()
+    std::shared_ptr<FrameLayout> Decoder::getFrameLayout() const
     {
         return pimpl->getFrameLayout();
     }
 
-    void Decoder::receiveInput(std::vector<unsigned char> aBuffer)
+    void Decoder::receiveInput(std::string aBuffer)
     {
         pimpl->receiveInput(aBuffer);
     }
@@ -371,11 +371,11 @@ namespace OGVCore {
         return 0;
     }
 
-    void Decoder::impl::receiveInput(std::vector<unsigned char> aBuffer)
+    void Decoder::impl::receiveInput(std::string aBuffer)
     {
         int bufsize = aBuffer.size();
         if (bufsize > 0) {
-            const unsigned char *buffer = aBuffer.data();
+            const char *buffer = aBuffer.data();
             buffersReceived = 1;
             if (appState == OGVCORE_STATE_DECODING) {
                 // queue ALL the pages!

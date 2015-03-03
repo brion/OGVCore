@@ -200,7 +200,7 @@ namespace OGVCore {
             virtual void onBuffer()
             {}
         
-            virtual void onRead(std::vector<unsigned char> data)
+            virtual void onRead(std::string data)
             {
                 // Pass chunk into the codec's buffer
                 owner->codec->receiveInput(data);

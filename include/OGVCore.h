@@ -76,20 +76,24 @@ namespace OGVCore {
 	struct PlaneBuffer {
 		const unsigned char *bytes;
 		int stride;
+		int height;
 		
-		PlaneBuffer(const unsigned char *aBytes, int aStride) :
+		PlaneBuffer(const unsigned char *aBytes, int aStride, int aHeight) :
 			bytes(aBytes),
-			stride(aStride)
+			stride(aStride),
+			height(aHeight)
 		{}
 		
 		PlaneBuffer(const PlaneBuffer &aPlaneBuffer) :
 			bytes(aPlaneBuffer.bytes),
-			stride(aPlaneBuffer.stride)
+			stride(aPlaneBuffer.stride),
+			height(aPlaneBuffer.height)
 		{}
 		
 		PlaneBuffer() :
 			bytes(0),
-			stride(0)
+			stride(0),
+			height(0)
 		{}
 	};
 

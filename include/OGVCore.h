@@ -155,6 +155,9 @@ namespace OGVCore {
 
 		class Delegate {
 		public:
+			virtual ~Delegate()
+			{}
+
 			virtual void onLoadedMetadata() = 0;
 		};
 		

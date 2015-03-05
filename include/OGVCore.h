@@ -6,6 +6,8 @@
 // Please reuse and redistribute with the LICENSE notes intact.
 //
 
+#pragma once
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -171,7 +173,7 @@ namespace OGVCore {
 		std::shared_ptr<AudioLayout> getAudioLayout() const;
 		std::shared_ptr<FrameLayout> getFrameLayout() const;
 
-		void receiveInput(std::string aBuffer);
+		void receiveInput(std::vector<unsigned char> aBuffer);
 		bool process();
 
 		bool decodeFrame();
@@ -231,7 +233,7 @@ namespace OGVCore {
 		public:
 			virtual void onStart() = 0;
 			virtual void onBuffer() = 0;
-			virtual void onRead(std::string data) = 0;
+			virtual void onRead(std::vector<unsigned char> data) = 0;
 			virtual void onDone() = 0;
 			virtual void onError(std::string err) = 0;
 		};

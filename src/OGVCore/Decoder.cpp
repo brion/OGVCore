@@ -49,7 +49,7 @@ namespace OGVCore {
         std::shared_ptr<AudioLayout> getAudioLayout();
         std::shared_ptr<FrameLayout> getFrameLayout();
 
-        void receiveInput(std::string aBuffer);
+        void receiveInput(std::vector<unsigned char> aBuffer);
         bool process();
 
         bool decodeFrame();
@@ -197,7 +197,7 @@ namespace OGVCore {
         return pimpl->getFrameLayout();
     }
 
-    void Decoder::receiveInput(std::string aBuffer)
+    void Decoder::receiveInput(std::vector<unsigned char> aBuffer)
     {
         pimpl->receiveInput(aBuffer);
     }
@@ -373,11 +373,11 @@ namespace OGVCore {
         return 0;
     }
 
-    void Decoder::impl::receiveInput(std::string aBuffer)
+    void Decoder::impl::receiveInput(std::vector<unsigned char> aBuffer)
     {
         int bufsize = aBuffer.size();
         if (bufsize > 0) {
-            const char *buffer = aBuffer.data();
+            const unsigned char *buffer = aBuffer.data();
             buffersReceived = 1;
             if (appState == OGVCORE_STATE_DECODING) {
                 // queue ALL the pages!

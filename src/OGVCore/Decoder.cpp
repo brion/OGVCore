@@ -356,8 +356,8 @@ namespace OGVCore {
         queuedFrame.reset(new FrameBuffer(frameLayout,
                                           videobufTime, keyframeTime,
                                           PlaneBuffer(ycbcr[0].data, ycbcr[0].stride, frameLayout->frame.height),
-                                          PlaneBuffer(ycbcr[1].data, ycbcr[1].stride, frameLayout->frame.height << frameLayout->subsampling.y),
-                                          PlaneBuffer(ycbcr[2].data, ycbcr[2].stride, frameLayout->frame.height << frameLayout->subsampling.y)));
+                                          PlaneBuffer(ycbcr[1].data, ycbcr[1].stride, frameLayout->frame.height >> frameLayout->subsampling.y),
+                                          PlaneBuffer(ycbcr[2].data, ycbcr[2].stride, frameLayout->frame.height >> frameLayout->subsampling.y)));
     }
 
     /* helper: push a page into the appropriate steam */

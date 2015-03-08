@@ -9,6 +9,7 @@
 // C++ awesome
 #include <vector>
 #include <functional>
+#include <cmath>
 
 // good ol' C library
 #include <stdio.h>

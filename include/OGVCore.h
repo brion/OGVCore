@@ -205,7 +205,7 @@ namespace OGVCore {
 		 */
 		long getSegmentLength() const;
 		/**
-		 * @return segment duration in seconds, or -1 if unknown
+		 * @return segment duration in seconds, or NAN if unknown
 		 */
 		double getDuration() const;
 		long getKeypointOffset(long time_ms);

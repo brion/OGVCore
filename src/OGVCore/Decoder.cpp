@@ -637,7 +637,7 @@ namespace OGVCore {
 
             appState = OGVCORE_STATE_DECODING;
             printf("Done with headers step\n");
-            //OgvJsLoadedMetadata();
+            delegate->onLoadedMetadata();
         }
     }
 

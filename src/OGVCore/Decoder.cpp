@@ -44,8 +44,8 @@ namespace OGVCore {
 
         bool hasAudio();
         bool hasVideo();
-        bool isAudioReady();
-        bool isFrameReady();
+        bool audioReady();
+        bool frameReady();
         std::shared_ptr<AudioLayout> getAudioLayout();
         std::shared_ptr<FrameLayout> getFrameLayout();
 
@@ -147,11 +147,11 @@ namespace OGVCore {
         int needData = 1;
         int buffersReceived = 0;
 
-        bool frameReady;
+        bool isFrameReady;
         std::shared_ptr<FrameLayout> frameLayout;
         std::shared_ptr<FrameBuffer> queuedFrame;
 
-        bool audioReady;
+        bool isAudioReady;
         std::shared_ptr<AudioLayout> audioLayout;
         std::shared_ptr<AudioBuffer> queuedAudio;
     };
@@ -177,14 +177,14 @@ namespace OGVCore {
         return pimpl->hasVideo();
     }
 
-    bool Decoder::isAudioReady() const
+    bool Decoder::audioReady() const
     {
-        return pimpl->isAudioReady();
+        return pimpl->audioReady();
     }
 
-    bool Decoder::isFrameReady() const
+    bool Decoder::frameReady() const
     {
-        return pimpl->isFrameReady();
+        return pimpl->frameReady();
     }
 
     std::shared_ptr<AudioLayout> Decoder::getAudioLayout() const
@@ -325,14 +325,14 @@ namespace OGVCore {
         return (frameLayout.get() != NULL);
     }
 
-    bool Decoder::impl::isAudioReady()
+    bool Decoder::impl::audioReady()
     {
-        return audioReady;
+        return isAudioReady;
     }
 
-    bool Decoder::impl::isFrameReady()
+    bool Decoder::impl::frameReady()
     {
-        return frameReady;
+        return isFrameReady;
     }
 
     std::shared_ptr<AudioLayout> Decoder::impl::getAudioLayout()
@@ -678,7 +678,7 @@ namespace OGVCore {
                 //printf("packet granulepos: %llx; time %lf; offset %d\n",(unsigned long long)videoPacket.granulepos, (double)videoPacketTime, (int)theoraInfo.keyframe_granule_shift);
 
                 //OgvJsOutputFrameReady(videobufTime, keyframeTime);
-                frameReady = 1;
+                isFrameReady = 1;
             } else {
                 needData = 1;
             }
@@ -696,7 +696,7 @@ namespace OGVCore {
                         audiobufTime = (double)audiobufGranulepos / audioLayout->sampleRate;
                     }
                     //OgvJsOutputAudioReady(audiobufTime);
-                    audioReady = 1;
+                    isAudioReady = 1;
                 } else {
                     needData = 1;
                 }
@@ -712,7 +712,7 @@ namespace OGVCore {
                         audiobufTime = vorbis_granule_time(&vorbisDspState, audiobufGranulepos);
                     }
                     //OgvJsOutputAudioReady(audiobufTime);
-                    audioReady = 1;
+                    isAudioReady = 1;
                 } else {
                     needData = 1;
                 }

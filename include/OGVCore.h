@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace OGVCore {
 
@@ -155,16 +156,10 @@ namespace OGVCore {
 	class Decoder {
 	public:
 
-		class Delegate {
-		public:
-			virtual ~Delegate()
-			{}
-
-			virtual void onLoadedMetadata() = 0;
-		};
-		
-		Decoder(std::unique_ptr<Decoder::Delegate> &&aDelegate);
+		Decoder();
 		~Decoder();
+
+		void setOnLoadedMetadata(const std::function<void()> &aCallback);
 	
 		bool hasAudio() const;
 		bool hasVideo() const;

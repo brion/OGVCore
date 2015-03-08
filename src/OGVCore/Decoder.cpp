@@ -8,6 +8,7 @@
 
 // C++ awesome
 #include <vector>
+#include <functional>
 
 // good ol' C library
 #include <stdio.h>
@@ -39,8 +40,10 @@ namespace OGVCore {
 
     class Decoder::impl {
     public:
-        impl(std::unique_ptr<Decoder::Delegate> &&aDelegate);
+        impl();
         ~impl();
+
+		void setOnLoadedMetadata(const std::function<void()> &aCallback);
 
         bool hasAudio();
         bool hasVideo();
@@ -67,7 +70,7 @@ namespace OGVCore {
         long getKeypointOffset(long time_ms);
 
     private:
-        std::unique_ptr<Decoder::Delegate> delegate;
+        std::function<void()> onLoadedMetadata;
 
         void video_write();
         int queue_page(ogg_page *page);
@@ -158,14 +161,19 @@ namespace OGVCore {
 
 #pragma mark - Decoder methods
 
-    Decoder::Decoder(std::unique_ptr<Decoder::Delegate> &&aDelegate):
-        pimpl(new impl(std::move(aDelegate)))
+    Decoder::Decoder():
+        pimpl(new impl())
     {}
 
     Decoder::~Decoder()
     {}
 
 #pragma mark - public method pimpl bouncers
+
+	void Decoder::setOnLoadedMetadata(const std::function<void()> &aCallback)
+	{
+		pimpl->setOnLoadedMetadata(aCallback);
+	}
 
     bool Decoder::hasAudio() const
     {
@@ -261,8 +269,8 @@ namespace OGVCore {
 
 #pragma mark - implementation methods
 
-    Decoder::impl::impl(std::unique_ptr<Decoder::Delegate> &&aDelegate) :
-        delegate(std::move(aDelegate))
+    Decoder::impl::impl() :
+		onLoadedMetadata([](){})
     {
         processAudio = 1;
         processVideo = 1;
@@ -314,6 +322,10 @@ namespace OGVCore {
         ogg_sync_clear(&oggSyncState);
     }
 
+	void Decoder::impl::setOnLoadedMetadata(const std::function<void()> &aCallback)
+	{
+		onLoadedMetadata = aCallback;
+	}
 
     bool Decoder::impl::hasAudio()
     {
@@ -637,7 +649,7 @@ namespace OGVCore {
 
             appState = OGVCORE_STATE_DECODING;
             printf("Done with headers step\n");
-            delegate->onLoadedMetadata();
+            onLoadedMetadata();
         }
     }
 

@@ -184,6 +184,9 @@ namespace OGVCore {
 		bool hasVideo() const;
 		bool audioReady() const;
 		bool frameReady() const;
+		double audioTimestamp() const;
+		double frameTimestamp() const;
+		double keyframeTimestamp() const;
 		std::shared_ptr<AudioLayout> getAudioLayout() const;
 		std::shared_ptr<FrameLayout> getFrameLayout() const;
 

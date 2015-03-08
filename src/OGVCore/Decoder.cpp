@@ -50,6 +50,9 @@ namespace OGVCore {
         bool hasVideo() const;
         bool audioReady() const;
         bool frameReady() const;
+        double audioTimestamp() const;
+        double frameTimestamp() const;
+        double keyframeTimestamp() const;
         std::shared_ptr<AudioLayout> getAudioLayout() const;
         std::shared_ptr<FrameLayout> getFrameLayout() const;
 
@@ -194,6 +197,21 @@ namespace OGVCore {
     bool Decoder::frameReady() const
     {
         return pimpl->frameReady();
+    }
+
+    double Decoder::audioTimestamp() const
+    {
+        return pimpl->audioTimestamp();
+    }
+    
+    double Decoder::frameTimestamp() const
+    {
+        return pimpl->frameTimestamp();
+    }
+    
+    double Decoder::keyframeTimestamp() const
+    {
+        return pimpl->keyframeTimestamp();
     }
 
     std::shared_ptr<AudioLayout> Decoder::getAudioLayout() const
@@ -346,6 +364,21 @@ namespace OGVCore {
     bool Decoder::impl::frameReady() const
     {
         return isFrameReady;
+    }
+
+    double Decoder::impl::audioTimestamp() const
+    {
+        return audiobufTime;
+    }
+    
+    double Decoder::impl::frameTimestamp() const
+    {
+        return videobufTime;
+    }
+    
+    double Decoder::impl::keyframeTimestamp() const
+    {
+        return keyframeTime;
     }
 
     std::shared_ptr<AudioLayout> Decoder::impl::getAudioLayout() const

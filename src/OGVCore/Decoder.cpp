@@ -45,12 +45,12 @@ namespace OGVCore {
 
 		void setOnLoadedMetadata(const std::function<void()> &aCallback);
 
-        bool hasAudio();
-        bool hasVideo();
-        bool audioReady();
-        bool frameReady();
-        std::shared_ptr<AudioLayout> getAudioLayout();
-        std::shared_ptr<FrameLayout> getFrameLayout();
+        bool hasAudio() const;
+        bool hasVideo() const;
+        bool audioReady() const;
+        bool frameReady() const;
+        std::shared_ptr<AudioLayout> getAudioLayout() const;
+        std::shared_ptr<FrameLayout> getFrameLayout() const;
 
         void receiveInput(std::vector<unsigned char> aBuffer);
         bool process();
@@ -65,8 +65,8 @@ namespace OGVCore {
 
         void flushBuffers();
 
-        long getSegmentLength();
-        double getDuration();
+        long getSegmentLength() const;
+        double getDuration() const;
         long getKeypointOffset(long time_ms);
 
     private:
@@ -252,12 +252,12 @@ namespace OGVCore {
         pimpl->discardAudio();
     }
 
-    long Decoder::getSegmentLength()
+    long Decoder::getSegmentLength() const
     {
         return pimpl->getSegmentLength();
     }
 
-    double Decoder::getDuration()
+    double Decoder::getDuration() const
     {
         return pimpl->getDuration();
     }
@@ -327,32 +327,32 @@ namespace OGVCore {
 		onLoadedMetadata = aCallback;
 	}
 
-    bool Decoder::impl::hasAudio()
+    bool Decoder::impl::hasAudio() const
     {
         return (audioLayout.get() != NULL);
     }
 
-    bool Decoder::impl::hasVideo()
+    bool Decoder::impl::hasVideo() const
     {
         return (frameLayout.get() != NULL);
     }
 
-    bool Decoder::impl::audioReady()
+    bool Decoder::impl::audioReady() const
     {
         return isAudioReady;
     }
 
-    bool Decoder::impl::frameReady()
+    bool Decoder::impl::frameReady() const
     {
         return isFrameReady;
     }
 
-    std::shared_ptr<AudioLayout> Decoder::impl::getAudioLayout()
+    std::shared_ptr<AudioLayout> Decoder::impl::getAudioLayout() const
     {
         return audioLayout;
     }
 
-    std::shared_ptr<FrameLayout> Decoder::impl::getFrameLayout()
+    std::shared_ptr<FrameLayout> Decoder::impl::getFrameLayout() const
     {
         return frameLayout;
     }
@@ -937,7 +937,7 @@ namespace OGVCore {
         needData = 1;
     }
 
-    long Decoder::impl::getSegmentLength()
+    long Decoder::impl::getSegmentLength() const
     {
         ogg_int64_t segment_len = -1;
         if (skeletonHeaders) {
@@ -946,7 +946,7 @@ namespace OGVCore {
         return (long)segment_len;
     }
 
-    double Decoder::impl::getDuration()
+    double Decoder::impl::getDuration() const
     {
         if (skeletonHeaders) {
             ogg_uint16_t ver_maj = -1, ver_min = -1;

@@ -9,14 +9,11 @@
 #include <stdio.h>
 #include <OGVCore.h>
 
-class MyDecoderDelegate : public OGVCore::Decoder::Delegate {
-	virtual void onLoadedMetadata() {
-		printf("got metadata\n");
-	}
-};
-
 int main() {
-	auto decoder = new OGVCore::Decoder(std::unique_ptr<OGVCore::Decoder::Delegate>(new MyDecoderDelegate));
+	auto decoder = new OGVCore::Decoder();
+	decoder->setOnLoadedMetadata([] () {
+		printf("Got metadata!\n");
+	});
 	printf("Hello! %p\n", decoder);
 	delete decoder;
 

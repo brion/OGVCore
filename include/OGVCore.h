@@ -203,11 +203,11 @@ namespace OGVCore {
 		/**
 		 * @return segment length in bytes
 		 */
-		long getSegmentLength();
+		long getSegmentLength() const;
 		/**
 		 * @return segment duration in seconds, or -1 if unknown
 		 */
-		double getDuration();
+		double getDuration() const;
 		long getKeypointOffset(long time_ms);
 
 	private:

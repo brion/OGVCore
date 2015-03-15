@@ -63,6 +63,15 @@ namespace OGVCore {
 		double aspectRatio;
 		double fps;
 		
+		FrameLayout() :
+			frame(0, 0),
+			picture(0, 0),
+			offset(0, 0),
+			subsampling(0, 0),
+			aspectRatio(0.0),
+			fps(0.0)
+		{}
+		
 		FrameLayout(Size aFrame, Size aPicture, Point aOffset, Point aSubsampling, double aAspectRatio, double aFps) :
 			frame(aFrame),
 			picture(aPicture),
@@ -124,6 +133,11 @@ namespace OGVCore {
 	struct AudioLayout {
 		int channelCount;
 		int sampleRate;
+		
+		AudioLayout() :
+			channelCount(0),
+			sampleRate(0)
+		{}
 		
 		AudioLayout(int aChannelCount, int aSampleRate) :
 			channelCount(aChannelCount),

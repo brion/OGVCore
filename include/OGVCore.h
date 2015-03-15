@@ -110,14 +110,14 @@ namespace OGVCore {
 	};
 
 	struct FrameBuffer {
-		std::shared_ptr<FrameLayout> layout;
+		FrameLayout layout;
 		double timestamp;
 		double keyframeTimestamp;
 		PlaneBuffer Y;
 		PlaneBuffer Cb;
 		PlaneBuffer Cr;
 
-		FrameBuffer(std::shared_ptr<FrameLayout> aLayout,
+		FrameBuffer(FrameLayout aLayout,
 		            double aTimestamp, double aKeyframeTimestamp,
 		            PlaneBuffer aY, PlaneBuffer aCb, PlaneBuffer aCr) :
 			layout(aLayout),
@@ -126,7 +126,16 @@ namespace OGVCore {
 			Y(aY),
 			Cb(aCb),
 			Cr(aCr)
-		{};
+		{}
+
+		FrameBuffer() :
+			layout(),
+			timestamp(0.0),
+			keyframeTimestamp(0.0),
+			Y(),
+			Cb(),
+			Cr()
+		{}
 	};
 
 

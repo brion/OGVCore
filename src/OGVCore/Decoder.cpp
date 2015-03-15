@@ -384,7 +384,7 @@ namespace OGVCore {
         int vdec = !(theoraInfo.pixel_fmt & 2);
 
         assert(queuedFrame.get() == NULL);
-        queuedFrame.reset(new FrameBuffer(frameLayout,
+        queuedFrame.reset(new FrameBuffer(*frameLayout,
                                           videobufTime, keyframeTime,
                                           PlaneBuffer(ycbcr[0].data, ycbcr[0].stride, frameLayout->frame.height),
                                           PlaneBuffer(ycbcr[1].data, ycbcr[1].stride, frameLayout->frame.height >> frameLayout->subsampling.y),

@@ -59,12 +59,10 @@ namespace OGVCore {
         void receiveInput(std::vector<unsigned char> aBuffer);
         bool process();
 
-        bool decodeFrame();
-        std::shared_ptr<FrameBuffer> dequeueFrame();
+        bool decodeFrame(std::function<void(FrameBuffer &aBuffer)> aCallback);
         void discardFrame();
 
-        bool decodeAudio();
-        std::shared_ptr<AudioBuffer> dequeueAudio();
+        bool decodeAudio(std::function<void(AudioBuffer &aBuffer)> aCallback);
         void discardAudio();
 
         void flushBuffers();
@@ -76,7 +74,7 @@ namespace OGVCore {
     private:
         std::function<void()> onLoadedMetadata;
 
-        void video_write();
+        void video_write(std::function<void(FrameBuffer &aBuffer)> aCallback);
         int queue_page(ogg_page *page);
 
         void processBegin();
@@ -234,14 +232,9 @@ namespace OGVCore {
         return pimpl->process();
     }
 
-    bool Decoder::decodeFrame()
+    bool Decoder::decodeFrame(std::function<void(FrameBuffer &aBuffer)> aCallback)
     {
-        return pimpl->decodeFrame();
-    }
-
-    std::shared_ptr<FrameBuffer> Decoder::dequeueFrame()
-    {
-        return pimpl->dequeueFrame();
+        return pimpl->decodeFrame(aCallback);
     }
 
     void Decoder::discardFrame()
@@ -249,14 +242,9 @@ namespace OGVCore {
         return pimpl->discardFrame();
     }
 
-    bool Decoder::decodeAudio()
+    bool Decoder::decodeAudio(std::function<void(AudioBuffer &aBuffer)> aCallback)
     {
-        return pimpl->decodeAudio();
-    }
-
-    std::shared_ptr<AudioBuffer> Decoder::dequeueAudio()
-    {
-        return pimpl->dequeueAudio();
+        return pimpl->decodeAudio(aCallback);
     }
 
     void Decoder::discardAudio()
@@ -388,7 +376,7 @@ namespace OGVCore {
         return frameLayout;
     }
 
-    void Decoder::impl::video_write(void) {
+    void Decoder::impl::video_write(std::function<void(FrameBuffer &aBuffer)> aCallback) {
         th_ycbcr_buffer ycbcr;
         th_decode_ycbcr_out(theoraDecoderContext, ycbcr);
 
@@ -401,6 +389,8 @@ namespace OGVCore {
                                           PlaneBuffer(ycbcr[0].data, ycbcr[0].stride, frameLayout->frame.height),
                                           PlaneBuffer(ycbcr[1].data, ycbcr[1].stride, frameLayout->frame.height >> frameLayout->subsampling.y),
                                           PlaneBuffer(ycbcr[2].data, ycbcr[2].stride, frameLayout->frame.height >> frameLayout->subsampling.y)));
+        aCallback(*queuedFrame);
+        queuedFrame.reset();
     }
 
     /* helper: push a page into the appropriate steam */
@@ -763,7 +753,7 @@ namespace OGVCore {
         }
     }
 
-    bool Decoder::impl::decodeFrame()
+    bool Decoder::impl::decodeFrame(std::function<void(FrameBuffer &aBuffer)> aCallback)
     {
         if (ogg_stream_packetout(&theoraStreamState, &videoPacket) <= 0) {
             printf("Theora packet didn't come out of stream\n");
@@ -783,27 +773,19 @@ namespace OGVCore {
             //printf("granulepos: %llx; time %lf; offset %d\n",(unsigned long long)videobufGranulepos, (double)videobufTime, (int)theoraInfo.keyframe_granule_shift);
 
             frames++;
-            video_write();
+            video_write(aCallback);
             return 1;
         } else if (ret == TH_DUPFRAME) {
             // Duplicated frame, advance time
             videobufTime += 1.0 / ((double) theoraInfo.fps_numerator / theoraInfo.fps_denominator);
             //printf("dupe videobuf time %lf\n", (double)videobufTime);
             frames++;
-            video_write();
+            video_write(aCallback);
             return 1;
         } else {
             printf("Theora decoder failed mysteriously? %d\n", ret);
             return 0;
         }
-    }
-
-    std::shared_ptr<FrameBuffer> Decoder::impl::dequeueFrame()
-    {
-        assert(queuedFrame.get());
-        std::shared_ptr<FrameBuffer> frame(queuedFrame);
-        queuedFrame.reset();
-        return frame;
     }
 
     void Decoder::impl::discardFrame()
@@ -816,7 +798,7 @@ namespace OGVCore {
         }
     }
 
-    bool Decoder::impl::decodeAudio()
+    bool Decoder::impl::decodeAudio(std::function<void(AudioBuffer &aBuffer)> aCallback)
     {
         int packetRet = 0;
         audiobufReady = 0;
@@ -899,16 +881,13 @@ namespace OGVCore {
                 }
             }
         }
+        
+        if (foundSome) {
+            aCallback(*queuedAudio);
+            queuedAudio.reset();
+        }
 
         return foundSome;
-    }
-
-    std::shared_ptr<AudioBuffer> Decoder::impl::dequeueAudio()
-    {
-        assert(queuedAudio.get());
-        std::shared_ptr<AudioBuffer> audio(queuedAudio);
-        queuedAudio.reset();
-        return audio;
     }
 
     void Decoder::impl::discardAudio()

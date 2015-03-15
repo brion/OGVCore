@@ -207,12 +207,10 @@ namespace OGVCore {
 		void receiveInput(std::vector<unsigned char> aBuffer);
 		bool process();
 
-		bool decodeFrame();
-		std::shared_ptr<FrameBuffer> dequeueFrame();
+		bool decodeFrame(std::function<void(FrameBuffer &aBuffer)> aCallback);
 		void discardFrame();
 
-		bool decodeAudio();
-		std::shared_ptr<AudioBuffer> dequeueAudio();
+		bool decodeAudio(std::function<void(AudioBuffer &aBuffer)> aCallback);
 		void discardAudio();
 
 		void flush();	

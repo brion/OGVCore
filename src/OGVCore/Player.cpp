@@ -252,7 +252,7 @@ namespace OGVCore {
 
         void processFrame()
         {
-            yCbCrBuffer = codec->dequeueFrame();
+            //yCbCrBuffer = codec->dequeueFrame(); // @todo
             frameEndTimestamp = yCbCrBuffer->timestamp;
         }
 

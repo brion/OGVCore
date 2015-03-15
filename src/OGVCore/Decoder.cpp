@@ -85,18 +85,18 @@ namespace OGVCore {
 
 
         /* Ogg and codec state for demux/decode */
-        ogg_sync_state    oggSyncState;
-        ogg_page          oggPage;
-        ogg_packet        oggPacket;
-        ogg_packet        audioPacket;
-        ogg_packet        videoPacket;
+        ogg_sync_state    oggSyncState {};
+        ogg_page          oggPage {};
+        ogg_packet        oggPacket {};
+        ogg_packet        audioPacket {};
+        ogg_packet        videoPacket {};
 
         /* Video decode state */
-        ogg_stream_state  theoraStreamState;
-        th_info           theoraInfo;
-        th_comment        theoraComment;
-        th_setup_info    *theoraSetupInfo;
-        th_dec_ctx       *theoraDecoderContext;
+        ogg_stream_state  theoraStreamState {};
+        th_info           theoraInfo {};
+        th_comment        theoraComment {};
+        th_setup_info    *theoraSetupInfo = nullptr;
+        th_dec_ctx       *theoraDecoderContext = nullptr;
 
         int               theoraHeaders = 0;
         int               theoraProcessingHeaders;
@@ -115,35 +115,35 @@ namespace OGVCore {
 
         /* Audio decode state */
         int               vorbisHeaders = 0;
-        int               vorbisProcessingHeaders;
-        ogg_stream_state  vorbisStreamState;
-        vorbis_info       vorbisInfo;
-        vorbis_dsp_state  vorbisDspState;
-        vorbis_block      vorbisBlock;
-        vorbis_comment    vorbisComment;
+        int               vorbisProcessingHeaders = 0;
+        ogg_stream_state  vorbisStreamState {};
+        vorbis_info       vorbisInfo {};
+        vorbis_dsp_state  vorbisDspState {};
+        vorbis_block      vorbisBlock {};
+        vorbis_comment    vorbisComment {};
 
 #ifdef OPUS
         int               opusHeaders = 0;
-        ogg_stream_state  opusStreamState;
-        OpusMSDecoder    *opusDecoder = NULL;
-        int               opusMappingFamily;
-        int               opusChannels;
-        int               opusPreskip;
-        ogg_int64_t       opusPrevPacketGranpos;
-        float             opusGain;
-        int               opusStreams;
+        ogg_stream_state  opusStreamState {};
+        OpusMSDecoder    *opusDecoder = nullptr;
+        int               opusMappingFamily = 0;
+        int               opusChannels = 0;
+        int               opusPreskip = 0;
+        ogg_int64_t       opusPrevPacketGranpos = 0L;
+        float             opusGain = 0.0f;
+        int               opusStreams = 0;
         /* 120ms at 48000 */
 #define OPUS_MAX_FRAME_SIZE (960*6)
 #endif
 
-        OggSkeleton      *skeleton = NULL;
-        ogg_stream_state  skeletonStreamState;
+        OggSkeleton      *skeleton = nullptr;
+        ogg_stream_state  skeletonStreamState {};
         int               skeletonHeaders = 0;
         int               skeletonProcessingHeaders = 0;
         int               skeletonDone = 0;
 
-        int               processAudio;
-        int               processVideo;
+        int               processAudio = 1;
+        int               processVideo = 1;
 
         enum AppState {
             OGVCORE_STATE_BEGIN,
@@ -154,13 +154,13 @@ namespace OGVCore {
         int needData = 1;
         int buffersReceived = 0;
 
-        bool isFrameReady;
-        std::shared_ptr<FrameLayout> frameLayout;
-        std::shared_ptr<FrameBuffer> queuedFrame;
+        bool isFrameReady = false;
+        std::shared_ptr<FrameLayout> frameLayout = nullptr;
+        std::shared_ptr<FrameBuffer> queuedFrame = nullptr;
 
-        bool isAudioReady;
-        std::shared_ptr<AudioLayout> audioLayout;
-        std::shared_ptr<AudioBuffer> queuedAudio;
+        bool isAudioReady = false;
+        std::shared_ptr<AudioLayout> audioLayout = nullptr;
+        std::shared_ptr<AudioBuffer> queuedAudio = nullptr;
     };
 
 #pragma mark - Decoder methods
@@ -291,9 +291,6 @@ namespace OGVCore {
     Decoder::impl::impl() :
 		onLoadedMetadata([](){})
     {
-        processAudio = 1;
-        processVideo = 1;
-
         appState = OGVCORE_STATE_BEGIN;
 
         /* start up Ogg stream synchronization layer */

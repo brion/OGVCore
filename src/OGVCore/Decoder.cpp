@@ -71,7 +71,7 @@ namespace OGVCore {
 
         long getSegmentLength() const;
         double getDuration() const;
-        long getKeypointOffset(long time_ms);
+        long getKeypointOffset(double aTime);
 
     private:
         std::function<void()> onLoadedMetadata;
@@ -281,9 +281,9 @@ namespace OGVCore {
         return pimpl->getDuration();
     }
 
-    long Decoder::getKeypointOffset(long time_ms)
+    long Decoder::getKeypointOffset(double aTime)
     {
-        return pimpl->getKeypointOffset(time_ms);
+        return pimpl->getKeypointOffset(aTime);
     }
 
 #pragma mark - implementation methods
@@ -1037,8 +1037,9 @@ namespace OGVCore {
         return -1;
     }
 
-    long Decoder::impl::getKeypointOffset(long time_ms)
+    long Decoder::impl::getKeypointOffset(double aTime)
     {
+        long time_ms = (long)(aTime * 1000.0);
         ogg_int64_t offset = -1;
         if (skeletonHeaders) {
             ogg_int32_t serial_nos[4];

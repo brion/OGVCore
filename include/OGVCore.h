@@ -211,7 +211,7 @@ namespace OGVCore {
 		 * @return segment duration in seconds, or NAN if unknown
 		 */
 		double getDuration() const;
-		long getKeypointOffset(long time_ms);
+		long getKeypointOffset(double aTime);
 
 	private:
 		class impl; std::unique_ptr<impl> pimpl;

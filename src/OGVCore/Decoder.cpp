@@ -845,7 +845,7 @@ namespace OGVCore {
                             audiobufTime = (double)audiobufGranulepos / audioLayout->sampleRate;
                         }
                         assert(queuedAudio.get() == NULL);
-                        queuedAudio.reset(new AudioBuffer(audioLayout, sampleCount, (const float **)pcmp));
+                        queuedAudio.reset(new AudioBuffer(*audioLayout, sampleCount, (const float **)pcmp));
 
                         free(pcmp);
                         free(pcm);
@@ -873,7 +873,7 @@ namespace OGVCore {
                     //OgvJsOutputAudio(pcm, vorbisInfo.channels, sampleCount);
 
                     assert(queuedAudio.get() == NULL);
-                    queuedAudio.reset(new AudioBuffer(audioLayout, sampleCount, (const float **)pcm));
+                    queuedAudio.reset(new AudioBuffer(*audioLayout, sampleCount, (const float **)pcm));
 
                     vorbis_synthesis_read(&vorbisDspState, sampleCount);
                 } else {
